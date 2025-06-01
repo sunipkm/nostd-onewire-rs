@@ -1,4 +1,4 @@
-use crate::{Ds2484, Ds2484Error, Ds2484Result, traits::Interact};
+use crate::{Ds2484Error, Ds2484Result, traits::Interact};
 use bitfield_struct::bitfield;
 use embedded_hal::{
     delay::DelayNs,
@@ -9,6 +9,72 @@ use embedded_onewire::OneWireStatus;
 pub(crate) const READ_PTR_CMD: u8 = 0xe1; // Set the read pointer
 pub(crate) const DEVICE_STATUS_PTR: u8 = 0xf0; // Device status register
 pub(crate) const DEVICE_RST_CMD: u8 = 0xf0; // Reset the device
+
+/// A DS2484 I2C to 1-Wire bridge device.
+///
+/// Takes ownership of an I2C bus (implementing [`I2c`](embedded_hal::i2c::I2c) trait)
+/// and a timer object implementing the [`DelayNs`](embedded_hal::delay::DelayNs) trait.
+pub struct Ds2484<I, D> {
+    pub(crate) i2c: I,
+    pub(crate) addr: u8,
+    pub(crate) delay: D,
+    pub(crate) retries: u8,
+    pub(crate) reset: bool, // Indicates if the device has been reset
+    pub(crate) overdrive: bool,
+}
+
+/// Builder for creating a [`Ds2484`] instance with custom configuration.
+pub struct Ds2484Builder {
+    pub(crate) retries: u8,
+    pub(crate) config: DeviceConfiguration,
+}
+
+impl Default for Ds2484Builder {
+    fn default() -> Self {
+        Ds2484Builder {
+            retries: 100,
+            config: DeviceConfiguration::new(),
+        }
+    }
+}
+
+impl Ds2484Builder {
+    /// Sets the retry count for the device.
+    ///
+    /// The retry count is used to determine how long
+    /// the host waits before operations on the 1-Wire
+    /// or I2C bus time out.
+    pub fn with_retries(mut self, retries: u8) -> Self {
+        self.retries = retries;
+        self
+    }
+
+    /// Sets the device configuration.
+    pub fn with_config(mut self, config: DeviceConfiguration) -> Self {
+        self.config = config;
+        self
+    }
+
+    /// Builds a new `Ds2484` instance with the specified configuration.
+    pub fn build<I: I2c<SevenBitAddress>, D: DelayNs>(
+        mut self,
+        i2c: I,
+        delay: D,
+    ) -> Ds2484Result<Ds2484<I, D>, I::Error> {
+        let mut dev = Ds2484 {
+            i2c,
+            addr: 0x18,
+            delay,
+            retries: self.retries,
+            reset: false,
+            overdrive: false,
+        };
+        dev.bus_reset()?;
+        self.config.write(&mut dev)?;
+        dev.overdrive = self.config.onewire_speed();
+        Ok(dev)
+    }
+}
 
 impl<I: I2c<SevenBitAddress>, D: DelayNs> Ds2484<I, D> {
     /// Get the status of the device.
@@ -24,8 +90,9 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484<I2C, D> {
     ///
     /// Performs a global reset of device state machine logic. Terminates any ongoing 1-Wire
     /// communication.
-    pub fn reset(&mut self) -> Ds2484Result<DeviceStatus, I2C::Error> {
+    pub fn bus_reset(&mut self) -> Ds2484Result<DeviceStatus, I2C::Error> {
         self.i2c.write(self.addr, &[DEVICE_RST_CMD])?;
+        self.reset = true;
         let mut tries = 0;
         let status = DeviceStatus::default();
         loop {
@@ -293,6 +360,7 @@ impl Interact for DeviceConfiguration {
         dev.onewire_wait()?;
         dev.i2c
             .write_read(dev.addr, &[Self::WRITE_ADDR, self.0], &mut [self.0])?;
+        dev.reset = false; // Reset the device state after writing configuration
         Ok(())
     }
 }

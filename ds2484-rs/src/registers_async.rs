@@ -17,20 +17,18 @@ pub struct Ds2484Async<I, D> {
     pub(crate) addr: u8,
     pub(crate) delay: D,
     pub(crate) retries: u8,
+    pub(crate) reset: bool, // Indicates if the device has been reset
+    pub(crate) overdrive: bool,
 }
 
-impl<I, D> Ds2484Async<I, D> {
-    /// Creates a new instance of [`Ds2484Async`] with the given I2C interface.
-    pub fn new(i2c: I, delay: D) -> Self {
-        Self {
-            i2c,
-            addr: 0x18,
-            delay,
-            retries: 100,
-        }
-    }
+/// Builder for creating a new [`Ds2484Async`] instance.
+pub struct Ds2484AsyncBuilder {
+    pub(crate) retries: u8,
+    pub(crate) config: DeviceConfiguration,
+}
 
-    /// Set the retry count.
+impl Ds2484AsyncBuilder {
+    /// Sets the retry count for the device.
     ///
     /// The retry count is used to determine how long
     /// the host waits before operations on the 1-Wire
@@ -38,6 +36,32 @@ impl<I, D> Ds2484Async<I, D> {
     pub fn with_retries(mut self, retries: u8) -> Self {
         self.retries = retries;
         self
+    }
+
+    /// Sets the device configuration.
+    pub fn with_config(mut self, config: DeviceConfiguration) -> Self {
+        self.config = config;
+        self
+    }
+
+    /// Builds a new `Ds2484` instance with the specified configuration.
+    pub async fn build<I: I2c<SevenBitAddress>, D: DelayNs>(
+        mut self,
+        i2c: I,
+        delay: D,
+    ) -> Ds2484Result<Ds2484Async<I, D>, I::Error> {
+        let mut dev = Ds2484Async {
+            i2c,
+            addr: 0x18,
+            delay,
+            retries: self.retries,
+            reset: false,
+            overdrive: false,
+        };
+        dev.bus_reset().await?;
+        self.config.async_write(&mut dev).await?;
+        dev.overdrive = self.config.onewire_speed();
+        Ok(dev)
     }
 }
 
@@ -55,8 +79,9 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484Async<I2C, D> {
     ///
     /// Performs a global reset of device state machine logic. Terminates any ongoing 1-Wire
     /// communication.
-    pub async fn reset(&mut self) -> Ds2484Result<DeviceStatus, I2C::Error> {
+    pub async fn bus_reset(&mut self) -> Ds2484Result<DeviceStatus, I2C::Error> {
         self.i2c.write(self.addr, &[DEVICE_RST_CMD]).await?;
+        self.reset = true;
         let mut tries = 0;
         let status = 0;
         loop {
@@ -151,6 +176,7 @@ impl InteractAsync for DeviceConfiguration {
             .write_read(dev.addr, &[Self::WRITE_ADDR, u8::from(*self)], &mut [val])
             .await?;
         *self = val.into();
+        dev.reset = false; // Clear the reset flag after writing configuration
         Ok(())
     }
 }

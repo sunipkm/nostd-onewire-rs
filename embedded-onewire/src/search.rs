@@ -1,4 +1,4 @@
-use crate::{OneWire, OneWireStatus, error::OneWireError, utils::OneWireCrc};
+use crate::{error::OneWireError, utils::OneWireCrc, OneWire, OneWireStatus, ONEWIRE_CONDITIONAL_SEARCH_CMD, ONEWIRE_SEARCH_CMD};
 
 /// A structure for searching devices on a 1-Wire bus.
 /// This structure implements the search algorithm for discovering devices on the 1-Wire bus.
@@ -17,9 +17,9 @@ pub struct OneWireSearch<'a, T> {
 /// Type of search performed using [`OneWireSearch`] or [`OneWireSearchAsync`](crate::OneWireSearchAsync).
 pub enum OneWireSearchKind {
     /// Normal search
-    Normal = 0xf0,
+    Normal = ONEWIRE_SEARCH_CMD,
     /// Search only for devicess with alarm
-    Alarmed = 0xec,
+    Alarmed = ONEWIRE_CONDITIONAL_SEARCH_CMD,
 }
 
 impl<'a, T> OneWireSearch<'a, T> {
@@ -90,6 +90,9 @@ impl<T: OneWire> OneWireSearch<'_, T> {
     /// | 56-63 | CRC-8 (`0b1_0001_1001` poly) |
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<Option<u64>, OneWireError<T::BusError>> {
+        if self.onewire.get_overdrive_mode()? {
+            return Err(OneWireError::BusInvalidSpeed);
+        }
         if self.last_device {
             return Ok(None); // If the last device was found, return None
         }

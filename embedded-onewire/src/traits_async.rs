@@ -80,4 +80,18 @@ pub trait OneWireAsync {
     async fn read_triplet(&mut self, _direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {
         Err(OneWireError::Unimplemented)
     }
+
+    /// Check if the 1-Wire bus is in overdrive mode.
+    /// # Returns
+    /// A result containing a boolean indicating whether the bus is in overdrive mode.
+    async fn get_overdrive_mode(&mut self) -> OneWireResult<bool, Self::BusError>;
+
+    /// Set the 1-Wire bus to overdrive mode.
+    /// # Arguments
+    /// * `enable` - A boolean indicating whether to enable or disable overdrive mode.
+    /// # Returns
+    /// A result indicating the success or failure of the operation.
+    async fn set_overdrive_mode(&mut self, _enable: bool) -> OneWireResult<(), Self::BusError> {
+        Err(OneWireError::Unimplemented)
+    }
 }

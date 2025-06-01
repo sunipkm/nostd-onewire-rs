@@ -10,6 +10,11 @@ pub enum OneWireError<E> {
     NoDevicePresent,
     /// Indicates that the bus is busy, which may happen if a device is already communicating.
     BusInUse,
+    /// Indicates that the bus is not initialized, which may happen if the bus master has come out
+    /// of a reset, but the 1-Wire port has not been configured.
+    BusUninitialized,
+    /// Indicates that the current bus speed is invalid for the operation.
+    BusInvalidSpeed,
     /// Indicates that a short circuit was detected on the bus.
     ShortCircuit,
     /// Indicates that the operation is not implemented, such as reading a triplet when not supported.

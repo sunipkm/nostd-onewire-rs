@@ -1,19 +1,13 @@
 use crate::{
-    Ds2484Async, Ds2484Error,
-    registers::{DeviceStatus, READ_PTR_CMD},
+    onewire::{ONEWIRE_READ_BYTE, ONEWIRE_READ_DATA_PTR, ONEWIRE_RESET_CMD, ONEWIRE_SINGLE_BIT, ONEWIRE_TRIPLET, ONEWIRE_WRITE_BYTE}, registers::{DeviceStatus, READ_PTR_CMD}, DeviceConfiguration, Ds2484Async, Ds2484Error, InteractAsync
 };
 use embedded_hal_async::{
     delay::DelayNs,
     i2c::{I2c, SevenBitAddress},
 };
-use embedded_onewire::{OneWireAsync, OneWireError, OneWireResult, OneWireStatus};
-
-const ONEWIRE_RESET_CMD: u8 = 0xb4;
-const ONEWIRE_WRITE_BYTE: u8 = 0xa5;
-const ONEWIRE_READ_BYTE: u8 = 0x96;
-const ONEWIRE_READ_DATA_PTR: u8 = 0xe1;
-const ONEWIRE_SINGLE_BIT: u8 = 0x87;
-const ONEWIRE_TRIPLET: u8 = 0x78;
+use embedded_onewire::{
+    ONEWIRE_SKIP_ROM_CMD_OD, OneWireAsync, OneWireError, OneWireResult, OneWireStatus,
+};
 
 impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D> {
     type Status = DeviceStatus;
@@ -23,7 +17,8 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
     async fn reset(&mut self) -> OneWireResult<Self::Status, Self::BusError> {
         self.onewire_wait().await?;
         self.i2c
-            .write(self.addr, &[ONEWIRE_RESET_CMD]).await
+            .write(self.addr, &[ONEWIRE_RESET_CMD])
+            .await
             .map_err(Ds2484Error::from)?;
         self.onewire_wait().await.map(|v| {
             if v.short_detect() {
@@ -39,7 +34,8 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
     async fn write_byte(&mut self, byte: u8) -> OneWireResult<(), Self::BusError> {
         self.onewire_wait().await?;
         self.i2c
-            .write(self.addr, &[ONEWIRE_WRITE_BYTE, byte]).await
+            .write(self.addr, &[ONEWIRE_WRITE_BYTE, byte])
+            .await
             .map_err(Ds2484Error::from)?;
         Ok(())
     }
@@ -47,7 +43,8 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
     async fn read_byte(&mut self) -> OneWireResult<u8, Self::BusError> {
         self.onewire_wait().await?;
         self.i2c
-            .write(self.addr, &[ONEWIRE_READ_BYTE]).await
+            .write(self.addr, &[ONEWIRE_READ_BYTE])
+            .await
             .map_err(Ds2484Error::from)?;
         self.onewire_wait().await?;
         let val = 0;
@@ -56,7 +53,8 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
                 self.addr,
                 &[READ_PTR_CMD, ONEWIRE_READ_DATA_PTR],
                 &mut [val],
-            ).await
+            )
+            .await
             .map_err(Ds2484Error::from)?;
         Ok(val)
     }
@@ -67,7 +65,8 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
             .write(
                 self.addr,
                 &[ONEWIRE_SINGLE_BIT, { if bit { 0x80 } else { 0x0 } }],
-            ).await
+            )
+            .await
             .map_err(Ds2484Error::from)?;
         Ok(())
     }
@@ -77,16 +76,47 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
         Ok(self.onewire_wait().await?.single_bit_result())
     }
 
-    async fn read_triplet(&mut self, direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {
+    async fn read_triplet(
+        &mut self,
+        direction: bool,
+    ) -> OneWireResult<(bool, bool), Self::BusError> {
         self.onewire_wait().await?;
         self.i2c
             .write(
                 self.addr,
                 &[ONEWIRE_TRIPLET, { if direction { 0x80 } else { 0x0 } }],
-            ).await
+            )
+            .await
             .map_err(Ds2484Error::from)?;
         Ok(self
-            .onewire_wait().await
+            .onewire_wait()
+            .await
             .map(|v| (v.single_bit_result(), v.triplet_second_bit()))?)
+    }
+
+    async fn get_overdrive_mode(&mut self) -> OneWireResult<bool, Self::BusError> {
+        let mut config = DeviceConfiguration::new();
+        config.async_read(self).await?;
+        Ok(config.onewire_speed())
+    }
+
+    async fn set_overdrive_mode(&mut self, enable: bool) -> OneWireResult<(), Self::BusError> {
+        let mut config = DeviceConfiguration::new();
+        config.async_read(self).await?;
+        let cur = config.onewire_speed();
+        if enable == cur {
+            return Ok(()); // No change needed
+        }
+        if !cur {
+            // not currently in overdrive mode
+            self.write_byte(ONEWIRE_SKIP_ROM_CMD_OD).await?;
+            config.set_onewire_speed(true);
+            config.async_write(self).await?;
+        } else {
+            config.set_onewire_speed(false);
+            config.async_write(self).await?;
+            self.bus_reset().await?; // Reset the bus to standard speed
+        }
+        Ok(())
     }
 }
