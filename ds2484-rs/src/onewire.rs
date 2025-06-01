@@ -21,15 +21,15 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
     type BusError = Ds2484Error<I2C::Error>;
 
     fn reset(&mut self) -> OneWireResult<Self::Status, Self::BusError> {
-        if self.onewire_wait()?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait()?;
         self.i2c
             .write(self.addr, &[ONEWIRE_RESET_CMD])
             .map_err(Ds2484Error::from)?;
         self.onewire_wait().map(|v| {
             if v.short_detect() {
                 Err(OneWireError::ShortCircuit)
+            } else if !v.presence() {
+                Err(OneWireError::NoDevicePresent)
             } else {
                 Ok(v)
             }
@@ -37,9 +37,7 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
     }
 
     fn write_byte(&mut self, byte: u8) -> OneWireResult<(), Self::BusError> {
-        if self.onewire_wait()?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait()?;
         self.i2c
             .write(self.addr, &[ONEWIRE_WRITE_BYTE, byte])
             .map_err(Ds2484Error::from)?;
@@ -47,15 +45,11 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
     }
 
     fn read_byte(&mut self) -> OneWireResult<u8, Self::BusError> {
-        if self.onewire_wait()?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait()?;
         self.i2c
             .write(self.addr, &[ONEWIRE_READ_BYTE])
             .map_err(Ds2484Error::from)?;
-        if self.onewire_wait()?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait()?;
         let val = 0;
         self.i2c
             .write_read(
@@ -80,31 +74,19 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
 
     fn read_bit(&mut self) -> OneWireResult<bool, Self::BusError> {
         self.write_bit(true)?;
-        self.onewire_wait().map(|v| {
-            if v.short_detect() {
-                Err(OneWireError::ShortCircuit)
-            } else {
-                Ok(v.single_bit_result())
-            }
-        })?
+        Ok(self.onewire_wait()?.single_bit_result())
     }
 
     fn read_triplet(&mut self, direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {
-        if self.onewire_wait()?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait()?;
         self.i2c
             .write(
                 self.addr,
                 &[ONEWIRE_TRIPLET, { if direction { 0x80 } else { 0x0 } }],
             )
             .map_err(Ds2484Error::from)?;
-        self.onewire_wait().map(|v| {
-            if v.short_detect() {
-                Err(OneWireError::ShortCircuit)
-            } else {
-                Ok((v.single_bit_result(), v.triplet_second_bit()))
-            }
-        })?
+        Ok(self
+            .onewire_wait()
+            .map(|v| (v.single_bit_result(), v.triplet_second_bit()))?)
     }
 }

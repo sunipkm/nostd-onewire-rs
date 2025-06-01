@@ -15,7 +15,9 @@ pub enum OneWireError<E> {
     /// Indicates that the operation is not implemented, such as reading a triplet when not supported.
     Unimplemented,
     /// Computed CRC of the ROM is invalid.
-    InvalidRomCrc,
+    InvalidCrc,
+    /// Invalid value
+    InvalidValue(&'static str)
 }
 
 impl<E> From<E> for OneWireError<E> {

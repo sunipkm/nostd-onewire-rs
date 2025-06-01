@@ -21,52 +21,42 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
     type BusError = Ds2484Error<I2C::Error>;
 
     async fn reset(&mut self) -> OneWireResult<Self::Status, Self::BusError> {
-        if self.onewire_wait().await?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait().await?;
         self.i2c
-            .write(self.addr, &[ONEWIRE_RESET_CMD])
-            .await
+            .write(self.addr, &[ONEWIRE_RESET_CMD]).await
             .map_err(Ds2484Error::from)?;
-        self.onewire_wait().await.map(|status| {
-            if status.shortcircuit() {
+        self.onewire_wait().await.map(|v| {
+            if v.short_detect() {
                 Err(OneWireError::ShortCircuit)
+            } else if !v.presence() {
+                Err(OneWireError::NoDevicePresent)
             } else {
-                Ok(status)
+                Ok(v)
             }
         })?
     }
 
     async fn write_byte(&mut self, byte: u8) -> OneWireResult<(), Self::BusError> {
-        if self.onewire_wait().await?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait().await?;
         self.i2c
-            .write(self.addr, &[ONEWIRE_WRITE_BYTE, byte])
-            .await
+            .write(self.addr, &[ONEWIRE_WRITE_BYTE, byte]).await
             .map_err(Ds2484Error::from)?;
         Ok(())
     }
 
     async fn read_byte(&mut self) -> OneWireResult<u8, Self::BusError> {
-        if self.onewire_wait().await?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait().await?;
         self.i2c
-            .write(self.addr, &[ONEWIRE_READ_BYTE])
-            .await
+            .write(self.addr, &[ONEWIRE_READ_BYTE]).await
             .map_err(Ds2484Error::from)?;
-        if self.onewire_wait().await?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+        self.onewire_wait().await?;
         let val = 0;
         self.i2c
             .write_read(
                 self.addr,
                 &[READ_PTR_CMD, ONEWIRE_READ_DATA_PTR],
                 &mut [val],
-            )
-            .await
+            ).await
             .map_err(Ds2484Error::from)?;
         Ok(val)
     }
@@ -77,43 +67,26 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
             .write(
                 self.addr,
                 &[ONEWIRE_SINGLE_BIT, { if bit { 0x80 } else { 0x0 } }],
-            )
-            .await
+            ).await
             .map_err(Ds2484Error::from)?;
         Ok(())
     }
 
     async fn read_bit(&mut self) -> OneWireResult<bool, Self::BusError> {
         self.write_bit(true).await?;
-        self.onewire_wait().await.map(|v| {
-            if v.short_detect() {
-                Err(OneWireError::ShortCircuit)
-            } else {
-                Ok(v.single_bit_result())
-            }
-        })?
+        Ok(self.onewire_wait().await?.single_bit_result())
     }
 
-    async fn read_triplet(
-        &mut self,
-        direction: bool,
-    ) -> OneWireResult<(bool, bool), Self::BusError> {
-        if self.onewire_wait().await?.shortcircuit() {
-            return Err(OneWireError::ShortCircuit);
-        };
+    async fn read_triplet(&mut self, direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {
+        self.onewire_wait().await?;
         self.i2c
             .write(
                 self.addr,
                 &[ONEWIRE_TRIPLET, { if direction { 0x80 } else { 0x0 } }],
-            )
-            .await
+            ).await
             .map_err(Ds2484Error::from)?;
-        self.onewire_wait().await.map(|v| {
-            if v.short_detect() {
-                Err(OneWireError::ShortCircuit)
-            } else {
-                Ok((v.single_bit_result(), v.triplet_second_bit()))
-            }
-        })?
+        Ok(self
+            .onewire_wait().await
+            .map(|v| (v.single_bit_result(), v.triplet_second_bit()))?)
     }
 }

@@ -16,10 +16,11 @@ mod utils;
 mod traits_async;
 mod search_async;
 pub use error::OneWireError;
-pub use search::OneWireSearch;
+pub use search::{OneWireSearch, OneWireSearchKind};
 pub use traits::{OneWire, OneWireStatus};
 pub use traits_async::OneWireAsync;
 pub use search_async::OneWireSearchAsync;
+pub use utils::OneWireCrc;
 
 /// Error type for 1-Wire operations.
 pub type OneWireResult<T, E> = Result<T, OneWireError<E>>;

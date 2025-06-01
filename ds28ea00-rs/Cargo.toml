@@ -1,0 +1,9 @@
+[package]
+name = "ds28ea00"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+embedded-onewire = { path = "../embedded-onewire" }
+fixed = { version = "1" }
+embedded-hal = "1.0"

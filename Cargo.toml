@@ -1,6 +1,3 @@
 [workspace]
 resolver = "3"
-members = [ "ds2484-rs",
-    "embedded-onewire",
-    "ds2484-rs"
-]
+members = ["embedded-onewire", "ds2484-rs", "ds28ea00-rs"]

@@ -1,4 +1,4 @@
-use crate::{error::OneWireError, utils::OneWireCrc, OneWireAsync, OneWireStatus};
+use crate::{error::OneWireError, utils::OneWireCrc, OneWireAsync, OneWireSearchKind, OneWireStatus};
 
 /// A structure for asynchronous searching of devices on a 1-Wire bus.
 /// This structure implements the search algorithm for discovering devices on the 1-Wire bus.
@@ -19,10 +19,10 @@ impl<'a, T> OneWireSearchAsync<'a, T> {
     /// # Arguments
     /// * `onewire` - A mutable reference to a type that implements the `OneWire` trait.
     /// * `cmd` - The command to use for the search operation (e.g., `0xf0` for normal search, `0xec` for search in alarm state).
-    pub fn new(onewire: &'a mut T, cmd: u8) -> Self {
+    pub fn new(onewire: &'a mut T, cmd: OneWireSearchKind) -> Self {
         Self {
             onewire,
-            cmd,
+            cmd: cmd as _,
             last_device: false,
             last_discrepancy: 0,
             last_family_discrepancy: 0,
@@ -36,11 +36,11 @@ impl<'a, T> OneWireSearchAsync<'a, T> {
     /// * `onewire` - A mutable reference to a type that implements the `OneWire` trait.
     /// * `cmd` - The command to use for the search operation (e.g., `0xf0` for normal search, `0xec` for search in alarm state).
     /// * `family` - The family code of the devices to search for.
-    pub fn with_family(onewire: &'a mut T, cmd: u8, family: u8) -> Self {
+    pub fn with_family(onewire: &'a mut T, cmd: OneWireSearchKind, family: u8) -> Self {
         let rom = [family, 0, 0, 0, 0, 0, 0, 0]; // Initialize the ROM with the family code
         Self {
             onewire,
-            cmd,
+            cmd: cmd as _,
             last_device: false,
             last_discrepancy: 0,
             last_family_discrepancy: 0,
@@ -166,10 +166,9 @@ impl <T: OneWireAsync> OneWireSearchAsync<'_, T> {
             // If no device was found or the first byte is zero, reset the search state
             return Ok(None);
         }
-        let crc = OneWireCrc::default();
-        if !crc.validate(&self.rom) {
+        if !OneWireCrc::validate(&self.rom) {
             // If the CRC is not valid, reset the search state
-            return Err(OneWireError::InvalidRomCrc);
+            return Err(OneWireError::InvalidCrc);
         }
         if self.family != 0 && self.rom[0] != self.family {
             // If a specific family code was set and it does not match the found device
