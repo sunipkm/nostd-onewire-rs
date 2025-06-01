@@ -1,0 +1,6 @@
+[workspace]
+resolver = "3"
+members = [ "ds2484-rs",
+    "embedded-onewire",
+    "ds2484-rs"
+]
