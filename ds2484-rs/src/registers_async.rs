@@ -27,6 +27,15 @@ pub struct Ds2484AsyncBuilder {
     pub(crate) config: DeviceConfiguration,
 }
 
+impl Default for Ds2484AsyncBuilder {
+    fn default() -> Self {
+        Self {
+            retries: 100,
+            config: DeviceConfiguration::default(),
+        }
+    }
+}
+
 impl Ds2484AsyncBuilder {
     /// Sets the retry count for the device.
     ///
