@@ -7,7 +7,7 @@ impl OneWireCrc {
     pub fn value(&self) -> u8 {
         self.0
     }
-    
+
     /// Update the CRC with the incoming byte.
     pub fn update(&mut self, byte: u8) {
         let mut crc = self.0 ^ byte; // XOR the byte with the current CRC value
@@ -22,7 +22,7 @@ impl OneWireCrc {
     }
 
     /// Valudate a sequence of bytes where the last byte is the 1-Wire CRC of
-    /// the previous bytes. 
+    /// the previous bytes.
     pub fn validate(sequence: &[u8]) -> bool {
         let mut crc = OneWireCrc(0);
         for &byte in sequence.iter() {

@@ -1,4 +1,6 @@
-use crate::{error::OneWireError, utils::OneWireCrc, OneWireAsync, OneWireSearchKind, OneWireStatus};
+use crate::{
+    OneWireAsync, OneWireSearchKind, OneWireStatus, error::OneWireError, utils::OneWireCrc,
+};
 
 /// A structure for asynchronous searching of devices on a 1-Wire bus.
 /// This structure implements the search algorithm for discovering devices on the 1-Wire bus.
@@ -58,14 +60,14 @@ impl<'a, T> OneWireSearchAsync<'a, T> {
     }
 }
 
-impl <T: OneWireAsync> OneWireSearchAsync<'_, T> {
+impl<T: OneWireAsync> OneWireSearchAsync<'_, T> {
     /// Searches for devices on the 1-Wire bus.
     /// This method implements the [1-Wire search algorithm](https://www.analog.com/en/resources/app-notes/1wire-search-algorithm.html) to discover devices connected to the bus.
     /// The [next](OneWireSearchAsync::next) method can be called repeatedly to find all devices on the bus.
     /// At the end of the search, calling this method will return `None` to indicate that no more devices are present.
     /// At that point, the search state becomes unusable and should be dropped.
     /// The search state is reset if the [verify](OneWireSearchAsync::verify) method is called.
-    /// 
+    ///
     /// # Returns
     /// A result containing the ROM code of the found device as a `u64` value.
     ///  
@@ -87,8 +89,7 @@ impl <T: OneWireAsync> OneWireSearchAsync<'_, T> {
         if self.last_device {
             return Ok(None);
         }
-        let status = 
-        self.onewire.reset().await?;
+        let status = self.onewire.reset().await?;
         if !status.presence() {
             return Err(OneWireError::NoDevicePresent);
         }
@@ -181,7 +182,7 @@ impl <T: OneWireAsync> OneWireSearchAsync<'_, T> {
     }
 
     /// Verifies if the device with the given ROM code is present on the 1-Wire bus.
-    /// 
+    ///
     /// This function should be called with a search state that has been exhausted (i.e., after calling [next](OneWireSearchAsync::next) until it returns `None`).
     /// This functions resets the search state, and calling [next](OneWireSearchAsync::next) after this call will start a new search.
     pub async fn verify(&mut self, rom: u64) -> Result<bool, OneWireError<T::BusError>> {

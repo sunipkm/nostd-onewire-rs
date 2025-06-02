@@ -36,7 +36,7 @@ pub trait OneWire {
     /// # Errors
     /// This method returns an error if the reset operation fails.
     fn reset(&mut self) -> OneWireResult<Self::Status, Self::BusError>;
-    
+
     /// Writes a byte to the 1-Wire bus.
     /// # Arguments
     /// * `byte` - The byte to write to the bus.
@@ -44,7 +44,7 @@ pub trait OneWire {
     /// # Errors
     /// This method returns an error if the write operation fails.
     fn write_byte(&mut self, byte: u8) -> OneWireResult<(), Self::BusError>;
-    
+
     /// Reads a byte from the 1-Wire bus.
     /// # Returns
     /// Byte read from the bus.
@@ -52,7 +52,7 @@ pub trait OneWire {
     /// # Errors
     /// This method returns an error if the read operation fails.
     fn read_byte(&mut self) -> OneWireResult<u8, Self::BusError>;
-    
+
     /// Reads a byte from the 1-Wire bus, with an option to write a byte before reading.
     /// # Arguments
     ///
@@ -61,18 +61,18 @@ pub trait OneWire {
     /// # Errors
     /// This method returns an error if the read operation fails.
     fn write_bit(&mut self, bit: bool) -> OneWireResult<(), Self::BusError>;
-    
+
     /// Reads a single bit from the 1-Wire bus.
     /// # Returns
     /// The bit read from the bus.
     /// # Errors
     /// This method returns an error if the read operation fails.
     fn read_bit(&mut self) -> OneWireResult<bool, Self::BusError>;
-    
+
     /// # Note: Not intended for public API use.
     /// ## This method is internally used to performa [1-wire search ROM sequence](https://www.analog.com/en/resources/app-notes/1wire-search-algorithm.html). A full sequence requires this command to be executed 64 times to identify and address one device.
     /// ## This method is internally used by the [search algorithm](https://www.analog.com/en/resources/app-notes/1wire-search-algorithm.html).
-    /// 
+    ///
     /// Generates three time slots: two read time slots and one write time slot at the 1-Wire line. The
     /// type of write time slot depends on the result of the read time slots and the direction byte. The
     /// direction byte determines the type of write time slot if both read time slots are 0 (a typical
@@ -81,16 +81,16 @@ pub trait OneWire {
     /// If the read time slots are 0 and 1, they are followed by a write-zero time slot.
     /// If the read time slots are 1 and 0, they are followed by a write-one time slot.
     /// If the read time slots are both 1 (error case), the subsequent write time slot is a write-one.
-    /// 
-    /// 
+    ///
+    ///
     /// # Arguments
     /// * `direction` - A boolean indicating the direction of the search. If true, the search is in the forward direction; if false, it is in the backward direction.
-    /// 
+    ///
     /// # Returns
     /// A result containing a tuple of two booleans:
     /// * The first boolean indicates the id bit read from the bus.
     /// * The second boolean indicates the complement bit read from the bus.
-    /// 
+    ///
     /// # Errors
     /// This method returns an error if the triplet read operation is not implemented or if any other error occurs.
     fn read_triplet(&mut self, _direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {

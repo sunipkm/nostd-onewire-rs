@@ -1,3 +1,5 @@
+use std::f32;
+
 use clap::Parser;
 
 /// Simple program to greet a person
@@ -35,15 +37,28 @@ fn main() {
     log::info!("Found {} devices", devices);
     loop {
         // Trigger temperature conversion
+        let start = std::time::Instant::now();
         temp_sensors
             .trigger_temperature_conversion(&mut ds2484, &mut delay)
             .expect("Failed to trigger temperature conversion");
+        let after_conversion = std::time::Instant::now();
         // Read temperatures from the sensors
-        for (rom, temp) in temp_sensors
-            .read_temperatures(&mut ds2484, false)
-            .expect("Failed to read temperatures")
-        {
-            log::info!("ROM: {:x}, Temperature: {}", rom, temp);
-        }
+        let readout = temp_sensors
+            .read_temperatures(&mut ds2484, true)
+            .expect("Failed to read temperatures");
+        let after_reading = std::time::Instant::now();
+        let output = readout
+            .iter()
+            .map(|(rom, temp)| {
+                format!("R{:02x}: {:.3}°C, ", rom.to_be_bytes()[0], f32::from(*temp))
+            })
+            .collect::<Vec<_>>();
+        let output = output.join(", ");
+        log::info!(
+            "Temperatures: {}, Conversion time: {:#?}, Read time: {:#?}\n",
+            output,
+            after_conversion.duration_since(start),
+            after_reading.duration_since(after_conversion)
+        );
     }
 }

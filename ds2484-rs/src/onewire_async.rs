@@ -1,5 +1,10 @@
 use crate::{
-    onewire::{ONEWIRE_READ_BYTE, ONEWIRE_READ_DATA_PTR, ONEWIRE_RESET_CMD, ONEWIRE_SINGLE_BIT, ONEWIRE_TRIPLET, ONEWIRE_WRITE_BYTE}, registers::{DeviceStatus, READ_PTR_CMD}, DeviceConfiguration, Ds2484Async, Ds2484Error, InteractAsync
+    DeviceConfiguration, Ds2484Async, Ds2484Error, InteractAsync,
+    onewire::{
+        ONEWIRE_READ_BYTE, ONEWIRE_READ_DATA_PTR, ONEWIRE_RESET_CMD, ONEWIRE_SINGLE_BIT,
+        ONEWIRE_TRIPLET, ONEWIRE_WRITE_BYTE,
+    },
+    registers::{DeviceStatus, READ_PTR_CMD},
 };
 use embedded_hal_async::{
     delay::DelayNs,

@@ -179,7 +179,7 @@ impl<const N: usize> Ds28ea00Group<N> {
                     *b = bus.read_byte()?;
                 }
                 if OneWireCrc::validate(&buf) {
-                    *temp = I12F4::from_le_bytes([buf[0], buf[1]]);
+                    *temp = I12F4::from_le_bytes([buf[0] & self.resolution.bitmask(), buf[1]]);
                 } else {
                     return Err(OneWireError::InvalidCrc);
                 }
@@ -232,6 +232,17 @@ impl ReadoutResolution {
             Resolution10bit => 187500,
             Resolution11bit => 375000,
             Resolution12bit => 750000,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn bitmask(&self) -> u8 {
+        use ReadoutResolution::*;
+        match self {
+            Resolution9bit => 0xf8,
+            Resolution10bit => 0xfc,
+            Resolution11bit => 0xfe,
+            Resolution12bit => 0xff,
         }
     }
 }

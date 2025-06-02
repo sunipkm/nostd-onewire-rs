@@ -22,7 +22,7 @@ pub enum OneWireError<E> {
     /// Computed CRC of the ROM is invalid.
     InvalidCrc,
     /// Invalid value
-    InvalidValue(&'static str)
+    InvalidValue(&'static str),
 }
 
 impl<E> From<E> for OneWireError<E> {

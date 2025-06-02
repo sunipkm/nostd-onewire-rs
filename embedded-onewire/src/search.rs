@@ -1,4 +1,7 @@
-use crate::{error::OneWireError, utils::OneWireCrc, OneWire, OneWireStatus, ONEWIRE_CONDITIONAL_SEARCH_CMD, ONEWIRE_SEARCH_CMD};
+use crate::{
+    ONEWIRE_CONDITIONAL_SEARCH_CMD, ONEWIRE_SEARCH_CMD, OneWire, OneWireStatus,
+    error::OneWireError, utils::OneWireCrc,
+};
 
 /// A structure for searching devices on a 1-Wire bus.
 /// This structure implements the search algorithm for discovering devices on the 1-Wire bus.
