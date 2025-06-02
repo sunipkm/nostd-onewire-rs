@@ -52,16 +52,16 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
             .await
             .map_err(Ds2484Error::from)?;
         self.onewire_wait().await?;
-        let val = 0;
+        let mut val = [0; 1];
         self.i2c
             .write_read(
                 self.addr,
                 &[READ_PTR_CMD, ONEWIRE_READ_DATA_PTR],
-                &mut [val],
+                &mut val,
             )
             .await
             .map_err(Ds2484Error::from)?;
-        Ok(val)
+        Ok(val[0])
     }
 
     async fn write_bit(&mut self, bit: bool) -> OneWireResult<(), Self::BusError> {

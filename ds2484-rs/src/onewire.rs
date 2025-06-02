@@ -61,15 +61,15 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
             .write(self.addr, &[ONEWIRE_READ_BYTE])
             .map_err(Ds2484Error::from)?;
         self.onewire_wait()?;
-        let val = 0;
+        let mut val = [0; 1];
         self.i2c
             .write_read(
                 self.addr,
                 &[READ_PTR_CMD, ONEWIRE_READ_DATA_PTR],
-                &mut [val],
+                &mut val,
             )
             .map_err(Ds2484Error::from)?;
-        Ok(val)
+        Ok(val[0])
     }
 
     fn write_bit(&mut self, bit: bool) -> OneWireResult<(), Self::BusError> {
@@ -95,19 +95,20 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
     }
 
     fn read_triplet(&mut self, direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {
-        if self.reset {
-            return Err(OneWireError::BusUninitialized);
-        }
-        self.onewire_wait()?;
-        self.i2c
-            .write(
-                self.addr,
-                &[ONEWIRE_TRIPLET, { if direction { 0x80 } else { 0x0 } }],
-            )
-            .map_err(Ds2484Error::from)?;
-        Ok(self
-            .onewire_wait()
-            .map(|v| (v.single_bit_result(), v.triplet_second_bit()))?)
+        // if self.reset {
+        //     return Err(OneWireError::BusUninitialized);
+        // }
+        // self.onewire_wait()?;
+        // self.i2c
+        //     .write(
+        //         self.addr,
+        //         &[ONEWIRE_TRIPLET, { if direction { 0x80 } else { 0x0 } }],
+        //     )
+        //     .map_err(Ds2484Error::from)?;
+        // Ok(self
+        //     .onewire_wait()
+        //     .map(|v| (v.single_bit_result(), v.triplet_second_bit()))?)
+        Err(OneWireError::Unimplemented)
     }
 
     fn get_overdrive_mode(&mut self) -> OneWireResult<bool, Self::BusError> {

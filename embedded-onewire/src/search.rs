@@ -16,6 +16,19 @@ pub struct OneWireSearch<'a, T> {
     rom: [u8; 8],
 }
 
+impl<T> std::fmt::Debug for OneWireSearch<'_, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OneWireSearch")
+            .field("cmd", &self.cmd)
+            .field("last_device", &self.last_device)
+            .field("last_discrepancy", &self.last_discrepancy)
+            .field("last_family_discrepancy", &self.last_family_discrepancy)
+            .field("family", &self.family)
+            .field("rom", &self.rom)
+            .finish()
+    }
+}
+
 #[repr(u8)]
 /// Type of search performed using [`OneWireSearch`] or [`OneWireSearchAsync`](crate::OneWireSearchAsync).
 pub enum OneWireSearchKind {
@@ -172,6 +185,8 @@ impl<T: OneWire> OneWireSearch<'_, T> {
             if id_bit_num > 64 {
                 self.last_discrepancy = last_zero;
                 self.last_device = self.last_discrepancy == 0;
+                println!("Found device with ROM: 0x{:x}", u64::from_le_bytes(self.rom));
+                println!("State: {self:?}");
                 break true;
             }
         };

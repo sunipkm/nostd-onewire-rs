@@ -94,9 +94,9 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484<I2C, D> {
         self.i2c.write(self.addr, &[DEVICE_RST_CMD])?;
         self.reset = true;
         let mut tries = 0;
-        let status = DeviceStatus::default();
+        let mut status = DeviceStatus::default();
         loop {
-            self.i2c.read(self.addr, &mut [status.0])?;
+            status.read(self)?;
             if status.device_reset() || tries > self.retries {
                 break;
             }
@@ -112,11 +112,13 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484<I2C, D> {
 
     pub(crate) fn onewire_wait(&mut self) -> Ds2484Result<DeviceStatus, I2C::Error> {
         let mut tries = 0;
-        let status = DeviceStatus::default();
+        let mut status = DeviceStatus::default();
+        let mut buf = [0; 1];
         self.i2c
             .write(self.addr, &[READ_PTR_CMD, DEVICE_STATUS_PTR])?;
         loop {
-            self.i2c.read(self.addr, &mut [status.0])?;
+            self.i2c.read(self.addr, &mut buf)?;
+            status.0 = buf[0];
             if !status.onewire_busy() || tries > self.retries {
                 break;
             }
@@ -240,8 +242,10 @@ impl Interact for DeviceStatus {
         &mut self,
         dev: &mut Ds2484<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
+        let mut val = [0; 1];
         dev.i2c
-            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut [self.0])?;
+            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut val)?;
+        self.0 = val[0];
         Ok(())
     }
 
@@ -253,7 +257,7 @@ impl Interact for DeviceStatus {
     }
 }
 
-#[bitfield(u8, into=cfg_to_u8)]
+#[bitfield(u8)]
 /// # Device configuration register
 ///
 /// The DS2484 supports four 1-Wire features that are
@@ -336,10 +340,6 @@ pub struct DeviceConfiguration {
     reserved: u8,
 }
 
-const fn cfg_to_u8(cfg: u8) -> u8 {
-    (cfg & 0x0f) | ((!cfg & 0x0f) << 4)
-}
-
 impl Interact for DeviceConfiguration {
     const WRITE_ADDR: u8 = 0xd2;
     const READ_PTR: u8 = 0xc3;
@@ -348,8 +348,10 @@ impl Interact for DeviceConfiguration {
         &mut self,
         dev: &mut Ds2484<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
+        let mut buf = [0; 1];
         dev.i2c
-            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut [self.0])?;
+            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut buf)?;
+        self.0 = buf[0];
         Ok(())
     }
 
@@ -358,9 +360,12 @@ impl Interact for DeviceConfiguration {
         dev: &mut Ds2484<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
         dev.onewire_wait()?;
-        dev.i2c
-            .write_read(dev.addr, &[Self::WRITE_ADDR, self.0], &mut [self.0])?;
+        let out = (self.0 & 0x0f) | ((!self.0 & 0x0f) << 4);
+        let mut buf = [0; 1];
+        dev.i2c.write(dev.addr, &[Self::WRITE_ADDR, out])?;
+        dev.i2c.read(dev.addr, &mut buf)?;
         dev.reset = false; // Reset the device state after writing configuration
+        self.0 = buf[0];
         Ok(())
     }
 }

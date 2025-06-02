@@ -92,17 +92,17 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484Async<I2C, D> {
         self.i2c.write(self.addr, &[DEVICE_RST_CMD]).await?;
         self.reset = true;
         let mut tries = 0;
-        let status = 0;
+        let mut status = [0; 1];
         loop {
-            self.i2c.read(self.addr, &mut [status]).await?;
-            let status = DeviceStatus::from(status);
+            self.i2c.read(self.addr, &mut status).await?;
+            let status = DeviceStatus::from(status[0]);
             if status.device_reset() || tries > self.retries {
                 break;
             }
             tries += 1;
             self.delay.delay_ms(1).await;
         }
-        let status: DeviceStatus = status.into();
+        let status: DeviceStatus = status[0].into();
         if tries > self.retries {
             Err(Ds2484Error::RetriesExceeded)
         } else {
@@ -112,20 +112,20 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484Async<I2C, D> {
 
     pub(crate) async fn onewire_wait(&mut self) -> Ds2484Result<DeviceStatus, I2C::Error> {
         let mut tries = 0;
-        let status = 0;
+        let mut status = [0; 1];
         self.i2c
             .write(self.addr, &[READ_PTR_CMD, DEVICE_STATUS_PTR])
             .await?;
         loop {
-            self.i2c.read(self.addr, &mut [status]).await?;
-            let status = DeviceStatus::from(status);
+            self.i2c.read(self.addr, &mut status).await?;
+            let status = DeviceStatus::from(status[0]);
             if !status.onewire_busy() || tries > self.retries {
                 break;
             }
             tries += 1;
             self.delay.delay_ms(1).await;
         }
-        let status: DeviceStatus = status.into();
+        let status: DeviceStatus = status[0].into();
         if status.onewire_busy() && tries > self.retries {
             Err(Ds2484Error::RetriesExceeded)
         } else {
@@ -143,11 +143,11 @@ impl InteractAsync for DeviceStatus {
         &mut self,
         dev: &mut Ds2484Async<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
-        let val = 0;
+        let mut val = [0; 1];
         dev.i2c
-            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut [val])
+            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut val)
             .await?;
-        *self = DeviceStatus::from(val);
+        *self = DeviceStatus::from(val[0]);
         Ok(())
     }
 
@@ -167,11 +167,11 @@ impl InteractAsync for DeviceConfiguration {
         &mut self,
         dev: &mut Ds2484Async<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
-        let val = 0;
+        let mut val = [0; 1];
         dev.i2c
-            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut [val])
+            .write_read(dev.addr, &[READ_PTR_CMD, Self::READ_PTR], &mut val)
             .await?;
-        *self = DeviceConfiguration::from(val);
+        *self = DeviceConfiguration::from(val[0]);
         Ok(())
     }
 
@@ -180,11 +180,11 @@ impl InteractAsync for DeviceConfiguration {
         dev: &mut Ds2484Async<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
         dev.onewire_wait().await?;
-        let val = 0;
+        let mut val = [0; 1];
         dev.i2c
-            .write_read(dev.addr, &[Self::WRITE_ADDR, u8::from(*self)], &mut [val])
+            .write_read(dev.addr, &[Self::WRITE_ADDR, u8::from(*self)], &mut val)
             .await?;
-        *self = val.into();
+        *self = val[0].into();
         dev.reset = false; // Clear the reset flag after writing configuration
         Ok(())
     }
