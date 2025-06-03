@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2024"
 
 [dependencies]
-embedded-onewire = { path = "../embedded-onewire", default-features = false}
+embedded-onewire = { version = "0.0.1", default-features = false, features = ["crc-table"] }
 embedded-hal = { version = "1.0", default-features = false }
 ds2484 = { path = "../ds2484-rs" }
 ds28ea00 = { path = "../ds28ea00-rs" }

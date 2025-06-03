@@ -195,7 +195,7 @@ dependencies = [
  "bitfield-struct",
  "embedded-hal",
  "embedded-hal-async",
- "embedded-onewire",
+ "embedded-onewire 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -206,7 +206,7 @@ dependencies = [
  "ds2484",
  "ds28ea00",
  "embedded-hal",
- "embedded-onewire",
+ "embedded-onewire 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger",
  "fixed",
  "linux-embedded-hal",
@@ -218,7 +218,7 @@ name = "ds28ea00"
 version = "0.0.1"
 dependencies = [
  "embedded-hal",
- "embedded-onewire",
+ "embedded-onewire 0.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fixed",
 ]
 
@@ -253,6 +253,12 @@ version = "0.0.1"
 dependencies = [
  "rand",
 ]
+
+[[package]]
+name = "embedded-onewire"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b56ebdf39877f1f23c2e5b5826358cc86296a01f29fa900f39c6219795b596b5"
 
 [[package]]
 name = "env_filter"
