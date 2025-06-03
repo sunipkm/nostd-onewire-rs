@@ -10,8 +10,8 @@ use linux_embedded_hal::{Delay, I2cdev};
 #[command(version, about, long_about = None)]
 struct Args {
     /// Path to I2C bus (e.g., /dev/i2c-1)
-    #[arg(short, long)]
-    path: String,
+    #[arg(short, long, use_value_delimiter=true, value_delimiter=',', num_args=1)]
+    paths: Vec<u8>,
 }
 
 fn main() {
@@ -19,8 +19,24 @@ fn main() {
     env_logger::init();
     // Parse command line arguments
     let args = Args::parse();
+    println!("Arguments: {args:#?}");
+    let hdls = args.paths.iter().map(|path|
+        {
+        std::thread::spawn({
+            let path = *path;
+            move || {
+            init(format!("/dev/i2c-{path}"))
+        }})}
+    ).collect::<Vec<_>>();
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
+}
+
+fn init(path: String) {
+    println!("Opening bus {path}");
     // Open the I2C bus
-    let mut i2c = I2cdev::new(&args.path).expect("Failed to open I2C device");
+    let mut i2c = I2cdev::new(&path).expect("Failed to open I2C device");
     let mut delay = Delay;
     // Create a DS2484 instance
     let mut ds2484 = ds2484::Ds2484Builder::default()
@@ -61,6 +77,12 @@ fn main() {
         .enumerate(&mut ds2484)
         .expect("Failed to enumerate devices");
     log::info!("Found {} devices", devices);
+    let roms = temp_sensors
+        .roms()
+        .map(|x| format!("0x{}", (x & 0x00ffffff_ffffffff) >> 8))
+        .collect::<Vec<_>>();
+    let roms = roms.join(", ");
+    log::info!("Roms enumerated: {roms}");
     temp_sensors
         .enable_overdrive(&mut ds2484)
         .expect("Failed to enable overdrive mode");

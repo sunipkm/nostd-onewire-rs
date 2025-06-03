@@ -124,6 +124,11 @@ impl<const N: usize> Ds28ea00Group<N> {
         Ok(self.devices)
     }
 
+    /// Enumerate the ROMs found
+    pub fn roms(&self) -> impl Iterator<Item = u64> {
+        self.roms[..self.devices].iter().map(|(x, _)| *x)
+    }
+
     /// Check if overdrive mode is enabled.
     pub fn overdrive(&self) -> bool {
         self.overdrive
