@@ -93,9 +93,8 @@ pub trait OneWire {
     ///
     /// # Errors
     /// This method returns an error if the triplet read operation is not implemented or if any other error occurs.
-    fn read_triplet(&mut self, _direction: bool) -> OneWireResult<(bool, bool), Self::BusError> {
-        Err(OneWireError::Unimplemented)
-    }
+    #[cfg(feature = "triplet-write")]
+    fn read_triplet(&mut self) -> OneWireResult<(bool, bool, bool), Self::BusError>;
 
     /// Check if the 1-Wire bus is in overdrive mode.
     /// # Returns

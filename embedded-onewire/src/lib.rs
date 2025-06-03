@@ -1,4 +1,4 @@
-// #![no_std]
+#![no_std]
 #![deny(missing_docs)]
 //! # embedded-onewire
 //! A no-std implementation of the 1-Wire protocol.

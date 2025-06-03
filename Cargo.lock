@@ -205,6 +205,8 @@ dependencies = [
  "clap",
  "ds2484",
  "ds28ea00",
+ "embedded-hal",
+ "embedded-onewire",
  "env_logger",
  "fixed",
  "linux-embedded-hal",

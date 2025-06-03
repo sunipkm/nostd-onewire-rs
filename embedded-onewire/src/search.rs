@@ -16,8 +16,8 @@ pub struct OneWireSearch<'a, T> {
     rom: [u8; 8],
 }
 
-impl<T> std::fmt::Debug for OneWireSearch<'_, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<T> core::fmt::Debug for OneWireSearch<'_, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("OneWireSearch")
             .field("cmd", &self.cmd)
             .field("last_device", &self.last_device)
@@ -123,36 +123,20 @@ impl<T: OneWire> OneWireSearch<'_, T> {
         let mut last_zero: u8 = 0;
         let mut idx: usize = 0; // Index in the ROM array
         let mut rom_mask: u8 = 1; // Mask for the current bit in the ROM byte
-        self.onewire.write_byte(self.cmd)?; // Search ROM command
+        // Search ROM command
+        self.onewire.write_byte(self.cmd)?;
         let res = loop {
-            // Determine the direction of the search
-            let dir = if id_bit_num < self.last_discrepancy {
-                self.rom[idx] & rom_mask > 0
-            } else {
-                id_bit_num == self.last_discrepancy
-            };
-            if !dir {
-                last_zero = id_bit_num;
-                if last_zero < 9 {
-                    self.last_family_discrepancy = last_zero;
-                }
-            }
             // Read the id_bit and the complement_bit using triplet if available
+            // and if this is not the first spin of the loop.
             // If triplet is not implemented, fallback to reading bits, and let
             // the write flag indicate if we need to write the direction bit later.
-            let (id_bit, complement_bit, write) = match self.onewire.read_triplet(dir) {
-                Ok(triplet) => (triplet.0, triplet.1, false),
-                Err(e) => {
-                    match e {
-                        OneWireError::Unimplemented => {
-                            // Fallback to reading bits since triplet is not implemented
-                            let id_bit = self.onewire.read_bit()?;
-                            let complement_bit = self.onewire.read_bit()?;
-                            (id_bit, complement_bit, true)
-                        }
-                        _ => return Err(e),
-                    }
-                }
+            #[cfg(feature = "triplet-write")]
+            let (id_bit, complement_bit, dir) = { self.onewire.read_triplet()? };
+            #[cfg(not(feature = "triplet-write"))]
+            let (id_bit, complement_bit) = {
+                let id_bit = self.onewire.read_bit()?;
+                let complement_bit = self.onewire.read_bit()?;
+                (id_bit, complement_bit)
             };
             if id_bit && complement_bit {
                 // Both bits are 1, which is an error condition, reset the search
@@ -162,18 +146,40 @@ impl<T: OneWire> OneWireSearch<'_, T> {
                 // The bits are different, use the id_bit
                 id_bit
             } else {
-                // Both bits are 0, use the direction from the ROM
-                dir
+                #[cfg(not(feature = "triplet-write"))]
+                {
+                    // Both bits are 0, use the direction from the ROM
+                    let idir = if id_bit_num < self.last_discrepancy {
+                        self.rom[idx] & rom_mask > 0
+                    } else {
+                        id_bit_num == self.last_discrepancy
+                    };
+                    if !idir {
+                        last_zero = id_bit_num;
+                        if last_zero < 9 {
+                            self.last_family_discrepancy = last_zero;
+                        }
+                    }
+                    idir
+                }
+                #[cfg(feature = "triplet-write")]
+                {
+                    if !dir {
+                        last_zero = id_bit_num;
+                        if last_zero < 9 {
+                            self.last_family_discrepancy = last_zero;
+                        }
+                    }
+                    dir
+                }
             };
             if set {
                 self.rom[idx] |= rom_mask; // Set the bit in the ROM
             } else {
                 self.rom[idx] &= !rom_mask; // Clear the bit in the ROM
             }
-
-            if write {
-                self.onewire.write_bit(set)?; // Write the direction bit if triplet is not implemented
-            }
+            #[cfg(not(feature = "triplet-write"))]
+            self.onewire.write_bit(set)?; // Write the direction bit if triplet is not implemented
 
             id_bit_num += 1;
             rom_mask <<= 1; // Move to the next bit in the ROM byte
@@ -185,8 +191,6 @@ impl<T: OneWire> OneWireSearch<'_, T> {
             if id_bit_num > 64 {
                 self.last_discrepancy = last_zero;
                 self.last_device = self.last_discrepancy == 0;
-                println!("Found device with ROM: 0x{:x}", u64::from_le_bytes(self.rom));
-                println!("State: {self:?}");
                 break true;
             }
         };

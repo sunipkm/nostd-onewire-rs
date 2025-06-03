@@ -4,7 +4,11 @@ version = "0.0.1"
 edition = "2024"
 
 [dependencies]
-embedded-onewire = { path = "../embedded-onewire" }
+embedded-onewire = { path = "../embedded-onewire", default-features = false }
 bitfield-struct = "0.11"
 embedded-hal = { version = "1.0", default-features = false }
 embedded-hal-async = { version = "1.0", default-features = false }
+
+[features]
+default = []
+triplet-write = ["embedded-onewire/triplet-write"]

@@ -123,9 +123,12 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484<I2C, D> {
                 break;
             }
             tries += 1;
-            self.delay.delay_ms(1);
+            if !self.overdrive {
+                self.delay.delay_ms(1);
+            } else {
+                self.delay.delay_us(100);
+            }
         }
-
         if status.onewire_busy() && tries > self.retries {
             Err(Ds2484Error::RetriesExceeded)
         } else {
@@ -160,7 +163,7 @@ pub struct DeviceStatus {
     /// at tMSP during the presence-detect cycle, the PPD bit is
     /// set to 1. This bit returns to its default 0 if there is no
     /// presence pulse during a subsequent [1-Wire Reset](https://www.analog.com/media/en/technical-documentation/data-sheets/ds2484.pdf#DS2484%20DS.indd%3AAnchor%2031%3A9139) command.
-    present_pulse_detect: bool,
+    pub(crate) present_pulse_detect: bool,
     /// The SD bit is updated with every [1-Wire Reset](https://www.analog.com/media/en/technical-documentation/data-sheets/ds2484.pdf#DS2484%20DS.indd%3AAnchor%2031%3A9139) command.
     /// If the DS2484 detects a logic 0 on the 1-Wire line
     /// at tSI during the presence-detect cycle, the SD bit is set
@@ -335,7 +338,7 @@ pub struct DeviceConfiguration {
     /// lowed by a 1-Wire Reset command, changes the DS2484
     /// and any 1-Wire devices on the active 1-Wire line back to
     /// standard speed.
-    pub onewire_speed: bool,
+    pub(crate) onewire_speed: bool,
     #[bits(4)]
     reserved: u8,
 }

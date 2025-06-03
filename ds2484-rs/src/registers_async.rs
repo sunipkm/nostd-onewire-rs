@@ -123,7 +123,11 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> Ds2484Async<I2C, D> {
                 break;
             }
             tries += 1;
-            self.delay.delay_ms(1).await;
+            if !self.overdrive {
+                self.delay.delay_ms(1).await;
+            } else {
+                self.delay.delay_us(100).await;
+            }
         }
         let status: DeviceStatus = status[0].into();
         if status.onewire_busy() && tries > self.retries {
@@ -180,9 +184,11 @@ impl InteractAsync for DeviceConfiguration {
         dev: &mut Ds2484Async<I, D>,
     ) -> Result<(), Ds2484Error<I::Error>> {
         dev.onewire_wait().await?;
+        let out = u8::from(*self);
+        let out = (out & 0x0f) | ((!out & 0x0f) << 4);
         let mut val = [0; 1];
         dev.i2c
-            .write_read(dev.addr, &[Self::WRITE_ADDR, u8::from(*self)], &mut val)
+            .write_read(dev.addr, &[Self::WRITE_ADDR, out], &mut val)
             .await?;
         *self = val[0].into();
         dev.reset = false; // Clear the reset flag after writing configuration

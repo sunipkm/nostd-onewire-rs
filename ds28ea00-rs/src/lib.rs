@@ -5,8 +5,7 @@
 //! A no-std implementation of the DS28EA00 1-Wire temperature sensors in a group.
 use embedded_hal::delay::DelayNs;
 use embedded_onewire::{
-    ONEWIRE_MATCH_ROM_CMD, ONEWIRE_SKIP_ROM_CMD, OneWire, OneWireCrc, OneWireError, OneWireResult,
-    OneWireSearch, OneWireSearchKind,
+    OneWire, OneWireCrc, OneWireError, OneWireResult, OneWireSearch, OneWireSearchKind, ONEWIRE_MATCH_ROM_CMD, ONEWIRE_MATCH_ROM_CMD_OD, ONEWIRE_SKIP_ROM_CMD, ONEWIRE_SKIP_ROM_CMD_OD
 };
 use fixed::types::I12F4;
 
@@ -20,6 +19,7 @@ pub struct Ds28ea00Group<const N: usize> {
     low: i8,
     high: i8,
     toggle_pio: bool,
+    overdrive: bool,
 }
 
 impl<const N: usize> Default for Ds28ea00Group<N> {
@@ -45,6 +45,7 @@ impl<const N: usize> Ds28ea00Group<N> {
             low: -40,
             high: 85,
             toggle_pio: false,
+            overdrive: false,
         }
     }
 
@@ -101,12 +102,13 @@ impl<const N: usize> Ds28ea00Group<N> {
         }
         if self.toggle_pio {
             // turn all PIO pins on
-            Self::address_any(bus)?;
+            Self::address_any(bus, self.overdrive)?;
             bus.write_byte(DS28EA00_TOGGLE_PIO)?;
+            bus.write_byte(DS28EA00_TOGGLE_PIO_OFF)?;
             bus.write_byte(DS28EA00_TOGGLE_PIO_ON)?;
         }
         // address all devices
-        Self::address_any(bus)?;
+        Self::address_any(bus, self.overdrive)?;
         // apply configuration
         bus.write_byte(DS28EA00_WRITE_SCRATCH)?;
         bus.write_byte(self.low as _)?;
@@ -114,16 +116,66 @@ impl<const N: usize> Ds28ea00Group<N> {
         bus.write_byte(self.resolution as _)?;
         if self.toggle_pio {
             // turn all PIO pins off
-            Self::address_any(bus)?;
+            Self::address_any(bus, self.overdrive)?;
             bus.write_byte(DS28EA00_TOGGLE_PIO)?;
+            bus.write_byte(DS28EA00_TOGGLE_PIO_ON)?;
             bus.write_byte(DS28EA00_TOGGLE_PIO_OFF)?;
         }
         Ok(self.devices)
     }
 
-    pub(crate) fn address_any<O: OneWire>(bus: &mut O) -> OneWireResult<(), O::BusError> {
+    /// Check if overdrive mode is enabled.
+    pub fn overdrive(&self) -> bool {
+        self.overdrive
+    }
+
+    /// Enable overdrive mode
+    pub fn enable_overdrive<O: OneWire>(
+        &mut self,
+        bus: &mut O,
+    ) -> OneWireResult<(), O::BusError> {
+        bus.set_overdrive_mode(true)?; // set overdrive mode
+        self.overdrive = true; // enable overdrive mode
+        Ok(())
+    }
+
+    /// Disable overdrive mode
+    pub fn disable_overdrive<O: OneWire>(
+        &mut self,
+        bus: &mut O,
+    ) -> OneWireResult<(), O::BusError> {
+        bus.set_overdrive_mode(false)?; // disable overdrive mode
+        self.overdrive = false; // disable overdrive mode
+        Ok(())
+    }
+
+    pub(crate) fn address_any<O: OneWire>(bus: &mut O, overdrive: bool) -> OneWireResult<(), O::BusError> {
+        let cmd = if overdrive {
+            ONEWIRE_SKIP_ROM_CMD_OD // match ROM in overdrive mode
+        } else {
+            ONEWIRE_SKIP_ROM_CMD // skip ROM to address all devices
+        };
         bus.reset()?; // reset 1-Wire bus
-        bus.write_byte(ONEWIRE_SKIP_ROM_CMD) // match any ROM
+        bus.write_byte(cmd) // match any ROM
+    }
+
+    pub(crate) fn address_one<O: OneWire>(
+        bus: &mut O,
+        rom: u64,
+        overdrive: bool,
+    ) -> OneWireResult<(), O::BusError> {
+        let cmd = if overdrive {
+            ONEWIRE_MATCH_ROM_CMD_OD // match ROM in overdrive mode
+        } else {
+            ONEWIRE_MATCH_ROM_CMD // match ROM
+        };
+        bus.reset()?; // reset 1-Wire bus
+        bus.write_byte(cmd)?; // Match ROM
+        for &b in rom.to_le_bytes().iter() {
+            // Send ROM address
+            bus.write_byte(b)?;
+        }
+        Ok(())
     }
 
     /// Triggers a temperature conversion on all DS28EA00 devices in the group.
@@ -138,11 +190,12 @@ impl<const N: usize> Ds28ea00Group<N> {
         bus: &mut O,
         delay: &mut D,
     ) -> OneWireResult<(), O::BusError> {
-        Self::address_any(bus)?; // address all devices
+        Self::address_any(bus, self.overdrive)?; // address all devices
         bus.write_byte(DS28EA00_START_CONV)?; // start temperature conversion
         if self.toggle_pio {
-            Self::address_any(bus)?; // address all devices
+            Self::address_any(bus, self.overdrive)?; // address all devices
             bus.write_byte(DS28EA00_TOGGLE_PIO)?;
+            bus.write_byte(DS28EA00_TOGGLE_PIO_OFF)?; // turn on PIO
             bus.write_byte(DS28EA00_TOGGLE_PIO_ON)?; // turn on PIO
         }
         delay.delay_us(self.resolution.delay_us()); // wait till conversion is finished
@@ -163,16 +216,14 @@ impl<const N: usize> Ds28ea00Group<N> {
         crc: bool,
     ) -> OneWireResult<&[(u64, Temperature)], O::BusError> {
         for (rom, temp) in self.roms[..self.devices].iter_mut() {
-            bus.reset()?; // reset 1-Wire bus
-            bus.write_byte(ONEWIRE_MATCH_ROM_CMD)?; // Match ROM
-            for &b in rom.to_le_bytes().iter() {
-                // Send ROM address
-                bus.write_byte(b)?;
-            }
+            Self::address_one(bus, *rom, self.overdrive)?; // address device
+            bus.write_byte(DS28EA00_READ_SCRATCH)?; // Read scratchpad
             if !crc {
-                for b in temp.to_le_bytes().iter_mut() {
+                let mut buf = [0; 2];
+                for b in buf.iter_mut() {
                     *b = bus.read_byte()?;
                 }
+                *temp = I12F4::from_le_bytes([buf[0] & self.resolution.bitmask(), buf[1]]);
             } else {
                 let mut buf = [0; 9];
                 for b in buf.iter_mut() {
@@ -185,12 +236,9 @@ impl<const N: usize> Ds28ea00Group<N> {
                 }
             }
             if self.toggle_pio {
-                bus.reset()?;
-                bus.write_byte(ONEWIRE_MATCH_ROM_CMD)?; // Match ROM
-                for &b in rom.to_le_bytes().iter() {
-                    // Send ROM address
-                    bus.write_byte(b)?;
-                }
+                Self::address_one(bus, *rom, self.overdrive)?; // address device
+                bus.write_byte(DS28EA00_TOGGLE_PIO)?;
+                bus.write_byte(DS28EA00_TOGGLE_PIO_ON)?;
                 bus.write_byte(DS28EA00_TOGGLE_PIO_OFF)?;
             }
         }
