@@ -1,5 +1,5 @@
 # embedded-onewire
-A no-std trait description of the 1-Wire protocol.
+A `no-std` trait description of the 1-Wire protocol.
 
 This crate provides a trait-based interface for 1-Wire communication, allowing you to implement the protocol on various platforms.
 [`OneWire`] trait defines the basic operations required for 1-Wire communication, such as resetting the bus, writing and reading bytes, and writing and reading bits.
