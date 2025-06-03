@@ -2,6 +2,9 @@
 name = "ds2484"
 version = "0.0.1"
 edition = "2024"
+license = "Apache-2.0"
+description = "A no-std driver implementation of the OneWire traits from embedded-onewire for the Analog Devices DS2484 I2C to 1-Wire bridge."
+authors = ["Sunip K. Mukherjee <sunipkmukherjee@gmail.com>"]
 
 [dependencies]
 embedded-onewire = { path = "../embedded-onewire", default-features = false }
