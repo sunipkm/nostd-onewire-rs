@@ -3,6 +3,8 @@ name = "embedded-onewire"
 version = "0.0.1"
 edition = "2024"
 license = "Apache-2.0"
+description = "A no-std trait definition for interacting with 1-Wire devices."
+authors = ["Sunip K. Mukherjee <sunipkmukherjee@gmail.com>"]
 
 [dependencies]
 
