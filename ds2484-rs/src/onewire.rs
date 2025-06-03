@@ -15,7 +15,7 @@ pub(crate) const ONEWIRE_WRITE_BYTE: u8 = 0xa5;
 pub(crate) const ONEWIRE_READ_BYTE: u8 = 0x96;
 pub(crate) const ONEWIRE_READ_DATA_PTR: u8 = 0xe1;
 pub(crate) const ONEWIRE_SINGLE_BIT: u8 = 0x87;
-#[cfg(feature = "triplet-write")]
+#[cfg(feature = "triplet-read")]
 pub(crate) const ONEWIRE_TRIPLET: u8 = 0x78;
 
 impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
@@ -91,7 +91,7 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
         Ok(self.onewire_wait()?.single_bit_result())
     }
 
-    #[cfg(feature = "triplet-write")]
+    #[cfg(feature = "triplet-read")]
     fn read_triplet(&mut self) -> OneWireResult<(bool, bool, bool), Self::BusError> {
         if self.reset {
             return Err(OneWireError::BusUninitialized);

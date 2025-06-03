@@ -6,7 +6,7 @@ use crate::{
     },
     registers::{DeviceStatus, READ_PTR_CMD},
 };
-#[cfg(feature = "triplet-write")]
+#[cfg(feature = "triplet-read")]
 use crate::onewire::ONEWIRE_TRIPLET;
 use embedded_hal_async::{
     delay::DelayNs,
@@ -83,7 +83,7 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWireAsync for Ds2484Async<I2C, D>
         Ok(self.onewire_wait().await?.single_bit_result())
     }
 
-    #[cfg(feature = "triplet-write")]
+    #[cfg(feature = "triplet-read")]
     async fn read_triplet(
         &mut self,
     ) -> OneWireResult<(bool, bool, bool), Self::BusError> {

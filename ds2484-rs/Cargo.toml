@@ -11,4 +11,4 @@ embedded-hal-async = { version = "1.0", default-features = false }
 
 [features]
 default = []
-triplet-write = ["embedded-onewire/triplet-write"]
+triplet-read = ["embedded-onewire/triplet-read"]

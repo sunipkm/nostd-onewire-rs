@@ -231,6 +231,7 @@ impl OneWireStatus for DeviceStatus {
         Some(self.logic_level())
     }
 
+    #[cfg(feature = "triplet-read")]
     fn direction(&self) -> Option<bool> {
         Some(self.branch_dir_taken())
     }

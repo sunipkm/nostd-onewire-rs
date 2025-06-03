@@ -77,7 +77,8 @@ pub trait OneWireAsync {
     ///
     /// # Errors
     /// This method returns an error if the triplet read operation is not implemented or if any other error occurs.
-    #[cfg(feature = "triplet-write")]
+    #[cfg(feature = "triplet-read")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "triplet-read")))]
     async fn read_triplet(&mut self) -> OneWireResult<(bool, bool, bool), Self::BusError> {
         Err(OneWireError::Unimplemented)
     }

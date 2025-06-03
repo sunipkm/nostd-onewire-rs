@@ -8,6 +8,8 @@ pub trait OneWireStatus {
     /// Returns true if a short circuit is detected on the bus, false otherwise.
     fn shortcircuit(&self) -> bool;
     /// Returns the direction taken in the [OneWire::read_triplet] operation.
+    #[cfg(feature = "triplet-read")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "triplet-read")))]
     fn direction(&self) -> Option<bool> {
         None
     }
@@ -93,7 +95,8 @@ pub trait OneWire {
     ///
     /// # Errors
     /// This method returns an error if the triplet read operation is not implemented or if any other error occurs.
-    #[cfg(feature = "triplet-write")]
+    #[cfg(feature = "triplet-read")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "triplet-read")))]
     fn read_triplet(&mut self) -> OneWireResult<(bool, bool, bool), Self::BusError>;
 
     /// Check if the 1-Wire bus is in overdrive mode.

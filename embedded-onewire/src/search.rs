@@ -130,9 +130,9 @@ impl<T: OneWire> OneWireSearch<'_, T> {
             // and if this is not the first spin of the loop.
             // If triplet is not implemented, fallback to reading bits, and let
             // the write flag indicate if we need to write the direction bit later.
-            #[cfg(feature = "triplet-write")]
+            #[cfg(feature = "triplet-read")]
             let (id_bit, complement_bit, dir) = { self.onewire.read_triplet()? };
-            #[cfg(not(feature = "triplet-write"))]
+            #[cfg(not(feature = "triplet-read"))]
             let (id_bit, complement_bit) = {
                 let id_bit = self.onewire.read_bit()?;
                 let complement_bit = self.onewire.read_bit()?;
@@ -146,7 +146,7 @@ impl<T: OneWire> OneWireSearch<'_, T> {
                 // The bits are different, use the id_bit
                 id_bit
             } else {
-                #[cfg(not(feature = "triplet-write"))]
+                #[cfg(not(feature = "triplet-read"))]
                 {
                     // Both bits are 0, use the direction from the ROM
                     let idir = if id_bit_num < self.last_discrepancy {
@@ -162,7 +162,7 @@ impl<T: OneWire> OneWireSearch<'_, T> {
                     }
                     idir
                 }
-                #[cfg(feature = "triplet-write")]
+                #[cfg(feature = "triplet-read")]
                 {
                     if !dir {
                         last_zero = id_bit_num;
@@ -178,7 +178,7 @@ impl<T: OneWire> OneWireSearch<'_, T> {
             } else {
                 self.rom[idx] &= !rom_mask; // Clear the bit in the ROM
             }
-            #[cfg(not(feature = "triplet-write"))]
+            #[cfg(not(feature = "triplet-read"))]
             self.onewire.write_bit(set)?; // Write the direction bit if triplet is not implemented
 
             id_bit_num += 1;
