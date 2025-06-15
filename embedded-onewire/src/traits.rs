@@ -49,7 +49,7 @@ pub trait OneWire {
     /// A result indicating the success or failure of the operation.
     /// If the device is successfully addressed, the method returns `Ok(())`.
     fn address(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
-        let od = self.get_overdrive_mode()?;
+        let od = self.get_overdrive_mode();
         let cmd = if rom.is_some() {
             if od {
                 crate::consts::ONEWIRE_MATCH_ROM_CMD_OD
@@ -149,7 +149,7 @@ pub trait OneWire {
     /// Check if the 1-Wire bus is in overdrive mode.
     /// # Returns
     /// A result containing a boolean indicating whether the bus is in overdrive mode.
-    fn get_overdrive_mode(&mut self) -> OneWireResult<bool, Self::BusError>;
+    fn get_overdrive_mode(&mut self) -> bool;
 
     /// Set the 1-Wire bus to overdrive mode.
     /// # Arguments

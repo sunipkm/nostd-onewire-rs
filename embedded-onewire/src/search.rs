@@ -106,7 +106,7 @@ impl<T: OneWire> OneWireSearch<'_, T> {
     /// | 56-63 | CRC-8 (`0b1_0001_1001` poly) |
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Result<Option<u64>, OneWireError<T::BusError>> {
-        if self.onewire.get_overdrive_mode()? {
+        if self.onewire.get_overdrive_mode() {
             return Err(OneWireError::BusInvalidSpeed);
         }
         if self.last_device {

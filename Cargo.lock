@@ -58,7 +58,7 @@ checksum = "e83bce73470c86529f139679e5c934f13eb8dd862f5df7ba0b38f12b0caf1490"
 
 [[package]]
 name = "embedded-onewire"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "rand",
 ]
