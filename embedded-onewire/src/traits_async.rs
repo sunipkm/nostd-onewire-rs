@@ -106,7 +106,7 @@ pub trait OneWireAsync {
     /// # Returns
     /// A result indicating the success or failure of the operation.
     /// If the device is successfully addressed, the method returns `Ok(())`.
-    async fn addrss(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
+    async fn address(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
         let od = self.get_overdrive_mode().await?;
         let cmd = if rom.is_some() {
             if od {

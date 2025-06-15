@@ -7,7 +7,7 @@ use embedded_hal::{
     i2c::{I2c, SevenBitAddress},
 };
 use embedded_onewire::{
-    ONEWIRE_SKIP_ROM_CMD_OD, OneWire, OneWireError, OneWireResult, OneWireStatus,
+    OneWire, OneWireError, OneWireResult, OneWireStatus,
 };
 
 pub(crate) const ONEWIRE_RESET_CMD: u8 = 0xb4;
@@ -122,7 +122,7 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
         if !cur {
             // not currently in overdrive mode
             self.reset()?; 
-            self.write_byte(ONEWIRE_SKIP_ROM_CMD_OD)?;
+            self.address(None)?;
             config.set_onewire_speed(true);
             config.write(self)?;
             self.overdrive = true;

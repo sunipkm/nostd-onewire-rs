@@ -122,7 +122,7 @@ pub trait OneWire {
     /// # Returns
     /// A result indicating the success or failure of the operation.
     /// If the device is successfully addressed, the method returns `Ok(())`.
-    fn addrss(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
+    fn address(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
         let od = self.get_overdrive_mode()?;
         let cmd = if rom.is_some() {
             if od {

@@ -27,12 +27,12 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "ds2484"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "bitfield-struct",
  "embedded-hal",
  "embedded-hal-async",
- "embedded-onewire 0.0.1",
+ "embedded-onewire 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -52,16 +52,16 @@ dependencies = [
 
 [[package]]
 name = "embedded-onewire"
-version = "0.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b56ebdf39877f1f23c2e5b5826358cc86296a01f29fa900f39c6219795b596b5"
-
-[[package]]
-name = "embedded-onewire"
 version = "0.0.2"
 dependencies = [
  "rand",
 ]
+
+[[package]]
+name = "embedded-onewire"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e83bce73470c86529f139679e5c934f13eb8dd862f5df7ba0b38f12b0caf1490"
 
 [[package]]
 name = "getrandom"
