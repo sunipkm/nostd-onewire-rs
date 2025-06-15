@@ -15,6 +15,19 @@ pub struct OneWireSearchAsync<'a, T> {
     rom: [u8; 8],
 }
 
+impl<T> core::fmt::Debug for OneWireSearchAsync<'_, T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("OneWireSearchAsync")
+            .field("cmd", &self.cmd)
+            .field("last_device", &self.last_device)
+            .field("last_discrepancy", &self.last_discrepancy)
+            .field("last_family_discrepancy", &self.last_family_discrepancy)
+            .field("family", &self.family)
+            .field("rom", &self.rom)
+            .finish()
+    }
+}
+
 impl<'a, T> OneWireSearchAsync<'a, T> {
     /// Creates a new [OneWireSearchAsync] instance.
     ///
@@ -33,7 +46,7 @@ impl<'a, T> OneWireSearchAsync<'a, T> {
         }
     }
 
-    /// Creates a new [OneWireSearchAsync] instance with a specific family code.
+    /// Creates a new [`OneWireSearchAsync`] instance with a specific family code.
     /// # Arguments
     /// * `onewire` - A mutable reference to a type that implements the `OneWire` trait.
     /// * `cmd` - The command to use for the search operation (e.g., `0xf0` for normal search, `0xec` for search in alarm state).

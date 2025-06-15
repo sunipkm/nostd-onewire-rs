@@ -1,5 +1,5 @@
 use crate::{
-    ONEWIRE_CONDITIONAL_SEARCH_CMD, ONEWIRE_SEARCH_CMD, OneWire, OneWireStatus,
+    consts::ONEWIRE_CONDITIONAL_SEARCH_CMD, consts::ONEWIRE_SEARCH_CMD, OneWire, OneWireStatus,
     error::OneWireError, utils::OneWireCrc,
 };
 

@@ -55,7 +55,7 @@ pub trait OneWire {
     /// This method returns an error if the read operation fails.
     fn read_byte(&mut self) -> OneWireResult<u8, Self::BusError>;
 
-    /// Reads a byte from the 1-Wire bus, with an option to write a byte before reading.
+    /// Write a single bit to the 1-Wire bus.
     /// # Arguments
     ///
     /// * `bit` - The byte to write.
@@ -111,5 +111,37 @@ pub trait OneWire {
     /// A result indicating the success or failure of the operation.
     fn set_overdrive_mode(&mut self, _enable: bool) -> OneWireResult<(), Self::BusError> {
         Err(OneWireError::Unimplemented)
+    }
+
+    /// Addresses devices on the 1-Wire bus.
+    /// The first [`OneWire::read_byte`], [`OneWire::read_bit`], [`OneWire::write_byte`], [`OneWire::write_bit`] operation should be preceded by this method to address devices on the bus.
+    /// Note: A [`OneWire::read_byte`] or [`OneWire::read_bit`] call will return garbage data if this method is called without specifying a ROM address on a bus with multiple devices.
+    /// # Arguments
+    /// * `rom` - The ROM address of the device to address. Pass [`None`] to skip ROM addressing and address all devices on the bus.
+    ///
+    /// # Returns
+    /// A result indicating the success or failure of the operation.
+    /// If the device is successfully addressed, the method returns `Ok(())`.
+    fn addrss(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
+        let od = self.get_overdrive_mode()?;
+        let cmd = if rom.is_some() {
+            if od {
+                crate::consts::ONEWIRE_MATCH_ROM_CMD_OD
+            } else {
+                crate::consts::ONEWIRE_MATCH_ROM_CMD
+            }
+        } else if od {
+            crate::consts::ONEWIRE_SKIP_ROM_CMD_OD
+        } else {
+            crate::consts::ONEWIRE_SKIP_ROM_CMD
+        };
+        self.reset()?; // Reset the bus before addressing
+        self.write_byte(cmd)?; // Send the match ROM command
+        if let Some(rom) = rom {
+            for &b in rom.to_le_bytes().iter() {
+                self.write_byte(b)?; // Write each byte of the ROM address
+            }
+        }
+        Ok(())
     }
 }
