@@ -1,4 +1,4 @@
-use crate::{OneWireError, OneWireResult};
+use crate::OneWireResult;
 
 /// Trait describing the status of a 1-Wire bus.
 /// This trait is used to encapsulate the status of the bus after a reset operation.
@@ -156,7 +156,5 @@ pub trait OneWire {
     /// * `enable` - A boolean indicating whether to enable or disable overdrive mode.
     /// # Returns
     /// A result indicating the success or failure of the operation.
-    fn set_overdrive_mode(&mut self, _enable: bool) -> OneWireResult<(), Self::BusError> {
-        Err(OneWireError::Unimplemented)
-    }
+    fn set_overdrive_mode(&mut self, enable: bool) -> OneWireResult<(), Self::BusError>;
 }

@@ -1,5 +1,5 @@
 #![allow(async_fn_in_trait)]
-use crate::{OneWireError, OneWireResult, OneWireStatus};
+use crate::{OneWireResult, OneWireStatus};
 
 /// Trait for 1-Wire communication.
 /// This trait defines the basic operations required for 1-Wire communication, such as resetting the bus,
@@ -126,9 +126,7 @@ pub trait OneWireAsync {
     /// This method returns an error if the triplet read operation is not implemented or if any other error occurs.
     #[cfg(feature = "triplet-read")]
     #[cfg_attr(docsrs, doc(cfg(feature = "triplet-read")))]
-    async fn read_triplet(&mut self) -> OneWireResult<(bool, bool, bool), Self::BusError> {
-        Err(OneWireError::Unimplemented)
-    }
+    async fn read_triplet(&mut self) -> OneWireResult<(bool, bool, bool), Self::BusError>;
 
     /// Check if the 1-Wire bus is in overdrive mode.
     /// # Returns
@@ -140,7 +138,5 @@ pub trait OneWireAsync {
     /// * `enable` - A boolean indicating whether to enable or disable overdrive mode.
     /// # Returns
     /// A result indicating the success or failure of the operation.
-    async fn set_overdrive_mode(&mut self, _enable: bool) -> OneWireResult<(), Self::BusError> {
-        Err(OneWireError::Unimplemented)
-    }
+    async fn set_overdrive_mode(&mut self, enable: bool) -> OneWireResult<(), Self::BusError>;
 }
