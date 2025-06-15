@@ -1,8 +1,15 @@
-use crate::{Ds2484Error, Ds2484Result, traits::Interact};
+use crate::{
+    Ds2484Error, Ds2484Result, InteractAsync,
+    traits::{Addressing, Interact},
+};
 use bitfield_struct::bitfield;
 use embedded_hal::{
     delay::DelayNs,
     i2c::{I2c, SevenBitAddress},
+};
+use embedded_hal_async::{
+    delay::DelayNs as DelayNsAsync,
+    i2c::{I2c as I2cAsync, SevenBitAddress as SevenBitAddressAsync},
 };
 use embedded_onewire::OneWireStatus;
 
@@ -71,6 +78,26 @@ impl Ds2484Builder {
         };
         dev.bus_reset()?;
         self.config.write(&mut dev)?;
+        dev.overdrive = self.config.onewire_speed();
+        Ok(dev)
+    }
+
+    /// Builds a new `Ds2484` instance with the specified configuration.
+    pub async fn build_async<I: I2cAsync<SevenBitAddressAsync>, D: DelayNsAsync>(
+        mut self,
+        i2c: I,
+        delay: D,
+    ) -> Ds2484Result<Ds2484<I, D>, I::Error> {
+        let mut dev = Ds2484 {
+            i2c,
+            addr: 0x18,
+            delay,
+            retries: self.retries,
+            reset: false,
+            overdrive: false,
+        };
+        dev.bus_reset_async().await?;
+        self.config.async_write(&mut dev).await?;
         dev.overdrive = self.config.onewire_speed();
         Ok(dev)
     }
@@ -185,12 +212,14 @@ pub struct DeviceStatus {
     /// DS2484 in read mode (during the acknowledge cycle),
     /// provided that the read pointer is positioned at the Status
     /// register.
+    #[bits(1, access = RO)]
     pub logic_level: bool,
     /// If the RST bit is 1, the DS2484 has performed an internal
     /// reset cycle, either caused by a power-on reset or from
     /// executing the [Device Reset](https://www.analog.com/media/en/technical-documentation/data-sheets/ds2484.pdf#DS2484%20DS.indd%3AAnchor%2021%3A9058) command. The RST bit is
     /// cleared automatically when the DS2484 executes a [Write Device Configuration](https://www.analog.com/media/en/technical-documentation/data-sheets/ds2484.pdf#DS2484%20DS.indd%3AAnchor%2015%3A9052) command to restore the selection of
     /// the desired 1-Wire features.
+    #[bits(1, access = RO)]
     pub device_reset: bool,
     /// The SBR bit reports the logic state of the active 1-Wire
     /// line sampled at t MSR of a [1-Wire Single Bit](https://www.analog.com/media/en/technical-documentation/data-sheets/ds2484.pdf#DS2484%20DS.indd%3AAnchor%2016%3A9053) command or
@@ -237,11 +266,12 @@ impl OneWireStatus for DeviceStatus {
     }
 }
 
-impl Interact for DeviceStatus {
+impl Addressing for DeviceStatus {
     const WRITE_ADDR: u8 = 0x0;
-
     const READ_PTR: u8 = 0xf0;
+}
 
+impl Interact for DeviceStatus {
     fn read<I: I2c<SevenBitAddress>, D>(
         &mut self,
         dev: &mut Ds2484<I, D>,
@@ -344,10 +374,12 @@ pub struct DeviceConfiguration {
     reserved: u8,
 }
 
-impl Interact for DeviceConfiguration {
+impl Addressing for DeviceConfiguration {
     const WRITE_ADDR: u8 = 0xd2;
     const READ_PTR: u8 = 0xc3;
+}
 
+impl Interact for DeviceConfiguration {
     fn read<I: I2c<SevenBitAddress>, D: DelayNs>(
         &mut self,
         dev: &mut Ds2484<I, D>,
@@ -392,11 +424,12 @@ pub struct OneWirePortConfiguration {
     r_wpu: u8,     // 0b1000
 }
 
-impl Interact for OneWirePortConfiguration {
+impl Addressing for OneWirePortConfiguration {
     const WRITE_ADDR: u8 = 0xc3;
-
     const READ_PTR: u8 = 0xb4;
+}
 
+impl Interact for OneWirePortConfiguration {
     fn read<I: I2c<SevenBitAddress>, D: DelayNs>(
         &mut self,
         dev: &mut Ds2484<I, D>,

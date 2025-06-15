@@ -4,12 +4,16 @@ use embedded_hal::{
     i2c::{I2c, SevenBitAddress},
 };
 
-/// Trait for interacting with the DS2484 I2C 1-Wire master.
-pub trait Interact {
-    /// The register command to write to the DS2484.
+/// Addresses of registers in the DS2484.
+pub trait Addressing {
+    /// Register address for writing to the DS2484.
     const WRITE_ADDR: u8;
-    /// Read pointer location for the register.
+    /// Pointer address for reading from the DS2484.
     const READ_PTR: u8;
+}
+
+/// Trait for interacting with the DS2484 I2C 1-Wire master.
+pub trait Interact: Addressing {
     /// Read the register value from the DS2484.
     fn read<I: I2c<SevenBitAddress>, D: DelayNs>(
         &mut self,

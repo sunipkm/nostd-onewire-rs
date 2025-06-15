@@ -6,9 +6,7 @@ use embedded_hal::{
     delay::DelayNs,
     i2c::{I2c, SevenBitAddress},
 };
-use embedded_onewire::{
-    OneWire, OneWireError, OneWireResult, OneWireStatus,
-};
+use embedded_onewire::{OneWire, OneWireError, OneWireResult, OneWireStatus};
 
 pub(crate) const ONEWIRE_RESET_CMD: u8 = 0xb4;
 pub(crate) const ONEWIRE_WRITE_BYTE: u8 = 0xa5;
@@ -103,13 +101,17 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
                 &[ONEWIRE_TRIPLET, { if direction { 0xff } else { 0x0 } }],
             )
             .map_err(Ds2484Error::from)?;
-        Ok(self
-            .onewire_wait()
-            .map(|v| (v.single_bit_result(), v.triplet_second_bit(), v.branch_dir_taken()))?)
+        Ok(self.onewire_wait().map(|v| {
+            (
+                v.single_bit_result(),
+                v.triplet_second_bit(),
+                v.branch_dir_taken(),
+            )
+        })?)
     }
 
-    fn get_overdrive_mode(&mut self) -> OneWireResult<bool, Self::BusError> {
-        Ok(self.overdrive)
+    fn get_overdrive_mode(&mut self) -> bool {
+        self.overdrive
     }
 
     fn set_overdrive_mode(&mut self, enable: bool) -> OneWireResult<(), Self::BusError> {
@@ -121,7 +123,7 @@ impl<I2C: I2c<SevenBitAddress>, D: DelayNs> OneWire for Ds2484<I2C, D> {
         }
         if !cur {
             // not currently in overdrive mode
-            self.reset()?; 
+            self.reset()?;
             self.address(None)?;
             config.set_onewire_speed(true);
             config.write(self)?;
