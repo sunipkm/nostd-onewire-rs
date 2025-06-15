@@ -89,11 +89,11 @@ pub trait OneWireAsync {
 
     /// Reads a single bit from the device addressed using [`OneWireAsync::address`] on the 1-Wire bus.
     /// Multiple bits can be read in succession after addressing the device.
-    /// 
+    ///
     /// # Note
     /// If there are more than one devices on the bus and [`OneWireAsync::address`] was not called
     /// with a specific ROM address, the read operation will return garbage data.
-    /// 
+    ///
     /// # Returns
     /// The bit read from the bus.
     /// # Errors

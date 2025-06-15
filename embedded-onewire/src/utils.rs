@@ -9,10 +9,10 @@ impl OneWireCrc {
     }
 
     /// Update the CRC with the incoming byte.
-    /// 
+    ///
     /// # Arguments
     /// * `byte` - The byte to update the CRC with.
-    /// 
+    ///
     /// # Note
     /// This method uses a lookup table for CRC calculation if the `crc-table` feature is enabled.
     /// Otherwise, it uses bit shifts and XOR operations for CRC calculation.
@@ -30,7 +30,7 @@ impl OneWireCrc {
 
     /// Valudate a sequence of bytes where the last byte is the 1-Wire CRC of
     /// the previous bytes.
-    /// 
+    ///
     /// # Note
     /// For such a sequence, the CRC should be `0x00`.
     pub fn validate(sequence: &[u8]) -> bool {
@@ -84,7 +84,9 @@ mod test {
         extern crate std;
         use rand::prelude::*;
         let mut rng = rand::rng();
-        let buf = (0..100).map(|_| rng.random::<u8>()).collect::<std::vec::Vec<u8>>();
+        let buf = (0..100)
+            .map(|_| rng.random::<u8>())
+            .collect::<std::vec::Vec<u8>>();
         let mut crc = OneWireCrc::default();
         for &byte in buf.iter() {
             crc.update(byte);
