@@ -21,7 +21,41 @@ pub trait OneWireAsync {
     /// This method returns an error if the reset operation fails.
     async fn reset(&mut self) -> OneWireResult<Self::Status, Self::BusError>;
 
-    /// Writes a byte to the 1-Wire bus.
+    /// Addresses devices on the 1-Wire bus.
+    /// The first [`OneWireAsync::read_byte`], [`OneWireAsync::read_bit`], [`OneWireAsync::write_byte`], [`OneWireAsync::write_bit`] operation should be preceded by this method to address devices on the bus.
+    /// Note: A [`OneWireAsync::read_byte`] or [`OneWireAsync::read_bit`] call will return garbage data if this method is called without specifying a ROM address on a bus with multiple devices.
+    /// # Arguments
+    /// * `rom` - The ROM address of the device to address. Pass [`None`] to skip ROM addressing and address all devices on the bus.
+    ///
+    /// # Returns
+    /// A result indicating the success or failure of the operation.
+    /// If the device is successfully addressed, the method returns `Ok(())`.
+    async fn address(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
+        let od = self.get_overdrive_mode().await?;
+        let cmd = if rom.is_some() {
+            if od {
+                crate::consts::ONEWIRE_MATCH_ROM_CMD_OD
+            } else {
+                crate::consts::ONEWIRE_MATCH_ROM_CMD
+            }
+        } else if od {
+            crate::consts::ONEWIRE_SKIP_ROM_CMD_OD
+        } else {
+            crate::consts::ONEWIRE_SKIP_ROM_CMD
+        };
+        self.reset().await?; // Reset the bus before addressing
+        self.write_byte(cmd).await?; // Send the match ROM command
+        if let Some(rom) = rom {
+            for &b in rom.to_le_bytes().iter() {
+                self.write_byte(b).await?; // Write each byte of the ROM address
+            }
+        }
+        Ok(())
+    }
+
+    /// Writes a byte to the device addressed using [`OneWireAsync::address`] on the 1-Wire bus.
+    /// Multiple bytes can be written in succession after addressing the device.
+    ///
     /// # Arguments
     /// * `byte` - The byte to write to the bus.
     ///
@@ -29,7 +63,13 @@ pub trait OneWireAsync {
     /// This method returns an error if the write operation fails.
     async fn write_byte(&mut self, byte: u8) -> OneWireResult<(), Self::BusError>;
 
-    /// Reads a byte from the 1-Wire bus.
+    /// Reads a byte from the device addressed using [`OneWireAsync::address`] on the 1-Wire bus.
+    /// Multiple bytes can be read in succession after addressing the device.
+    ///
+    /// # Note
+    /// If there are more than one devices on the bus and [`OneWireAsync::address`] was not called
+    /// with a specific ROM address, the read operation will return garbage data.
+    ///
     /// # Returns
     /// Byte read from the bus.
     ///
@@ -37,7 +77,8 @@ pub trait OneWireAsync {
     /// This method returns an error if the read operation fails.
     async fn read_byte(&mut self) -> OneWireResult<u8, Self::BusError>;
 
-    /// Reads a byte from the 1-Wire bus, with an option to write a byte before reading.
+    /// Write a single bit to the device addressed using [`OneWireAsync::address`] on the 1-Wire bus.
+    /// Multiple bits can be written in succession after addressing the device.
     /// # Arguments
     ///
     /// * `bit` - The byte to write.
@@ -46,7 +87,13 @@ pub trait OneWireAsync {
     /// This method returns an error if the read operation fails.
     async fn write_bit(&mut self, bit: bool) -> OneWireResult<(), Self::BusError>;
 
-    /// Reads a single bit from the 1-Wire bus.
+    /// Reads a single bit from the device addressed using [`OneWireAsync::address`] on the 1-Wire bus.
+    /// Multiple bits can be read in succession after addressing the device.
+    /// 
+    /// # Note
+    /// If there are more than one devices on the bus and [`OneWireAsync::address`] was not called
+    /// with a specific ROM address, the read operation will return garbage data.
+    /// 
     /// # Returns
     /// The bit read from the bus.
     /// # Errors
@@ -95,37 +142,5 @@ pub trait OneWireAsync {
     /// A result indicating the success or failure of the operation.
     async fn set_overdrive_mode(&mut self, _enable: bool) -> OneWireResult<(), Self::BusError> {
         Err(OneWireError::Unimplemented)
-    }
-
-    /// Addresses devices on the 1-Wire bus.
-    /// The first [`OneWire::read_byte`], [`OneWire::read_bit`], [`OneWire::write_byte`], [`OneWire::write_bit`] operation should be preceded by this method to address devices on the bus.
-    /// Note: A [`OneWire::read_byte`] or [`OneWire::read_bit`] call will return garbage data if this method is called without specifying a ROM address on a bus with multiple devices.
-    /// # Arguments
-    /// * `rom` - The ROM address of the device to address. Pass [`None`] to skip ROM addressing and address all devices on the bus.
-    ///
-    /// # Returns
-    /// A result indicating the success or failure of the operation.
-    /// If the device is successfully addressed, the method returns `Ok(())`.
-    async fn address(&mut self, rom: Option<u64>) -> OneWireResult<(), Self::BusError> {
-        let od = self.get_overdrive_mode().await?;
-        let cmd = if rom.is_some() {
-            if od {
-                crate::consts::ONEWIRE_MATCH_ROM_CMD_OD
-            } else {
-                crate::consts::ONEWIRE_MATCH_ROM_CMD
-            }
-        } else if od {
-            crate::consts::ONEWIRE_SKIP_ROM_CMD_OD
-        } else {
-            crate::consts::ONEWIRE_SKIP_ROM_CMD
-        };
-        self.reset().await?; // Reset the bus before addressing
-        self.write_byte(cmd).await?; // Send the match ROM command
-        if let Some(rom) = rom {
-            for &b in rom.to_le_bytes().iter() {
-                self.write_byte(b).await?; // Write each byte of the ROM address
-            }
-        }
-        Ok(())
     }
 }
