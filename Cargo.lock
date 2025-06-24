@@ -39,7 +39,7 @@ dependencies = [
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "embedded-hal-mock",
- "embedded-onewire 0.0.4",
+ "embedded-onewire",
 ]
 
 [[package]]
@@ -90,12 +90,6 @@ dependencies = [
  "embedded-hal 1.0.0",
  "nb 1.1.0",
 ]
-
-[[package]]
-name = "embedded-onewire"
-version = "0.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99a6b8e0bec2f584e9cebe410b46f288e32503ee49f5b7b888ca127e951c08cb"
 
 [[package]]
 name = "embedded-onewire"

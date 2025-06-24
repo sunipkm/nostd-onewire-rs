@@ -12,7 +12,7 @@ use embedded_hal_async::{
     delay::DelayNs as DelayNsAsync,
     i2c::{I2c as I2cAsync, SevenBitAddress as SevenBitAddressAsync},
 };
-use embedded_onewire::{OneWireAsync, OneWireError, OneWireResult, OneWireStatus};
+use embedded_onewire::{consts::ONEWIRE_SKIP_ROM_CMD_OD, OneWireAsync, OneWireError, OneWireResult, OneWireStatus};
 
 impl<I2C: I2cAsync<SevenBitAddressAsync>, D: DelayNsAsync> OneWireAsync for Ds2484<I2C, D> {
     type Status = DeviceStatus;
@@ -110,7 +110,7 @@ impl<I2C: I2cAsync<SevenBitAddressAsync>, D: DelayNsAsync> OneWireAsync for Ds24
         if !cur {
             // not currently in overdrive mode
             self.reset().await?;
-            self.address(None).await?;
+            self.write_byte(ONEWIRE_SKIP_ROM_CMD_OD).await?;
             config.set_onewire_speed(true);
             config.async_write(self).await?;
             self.overdrive = true;
