@@ -1,10 +1,13 @@
 //! Command constants for 1-Wire communication.
+//! These constants are intended to be used by hardware that
+//! implements the 1-Wire protocol HAL (traits), e.g. the
+//! [`ds2484`](https://docs.rs/ds2484/latest/ds2484/) crate.
 
 /// Command to match a specific ROM address in 1-Wire communication (non-overdrive mode)
-pub(crate) const ONEWIRE_MATCH_ROM_CMD: u8 = 0x55;
+pub const ONEWIRE_MATCH_ROM_CMD: u8 = 0x55;
 
 /// Command to skip ROM address in 1-Wire communication (non-overdrive mode)
-pub(crate) const ONEWIRE_SKIP_ROM_CMD: u8 = 0xcc;
+pub const ONEWIRE_SKIP_ROM_CMD: u8 = 0xcc;
 
 /// The Overdrive-Match ROM command followed by a 64-bit
 /// ROM sequence transmitted at overdrive speed allows the
@@ -19,7 +22,7 @@ pub(crate) const ONEWIRE_SKIP_ROM_CMD: u8 = 0xcc;
 /// pulse of minimum 480μs duration. The Overdrive-Match
 /// ROM command can be used with a single device or mul-
 /// tiple devices on the bus.
-pub(crate) const ONEWIRE_MATCH_ROM_CMD_OD: u8 = 0x69;
+pub const ONEWIRE_MATCH_ROM_CMD_OD: u8 = 0x69;
 
 /// On a single-drop bus this command can save time by
 /// allowing the bus master to access the control functions
@@ -29,7 +32,7 @@ pub(crate) const ONEWIRE_MATCH_ROM_CMD_OD: u8 = 0x69;
 /// following this command has to occur at overdrive
 /// speed until a reset pulse of minimum 480μs duration
 /// resets all devices on the bus to standard speed (OD = 0).
-pub(crate) const ONEWIRE_SKIP_ROM_CMD_OD: u8 = 0x3c;
+pub const ONEWIRE_SKIP_ROM_CMD_OD: u8 = 0x3c;
 
 /// Command to search for devices on the 1-Wire bus
 pub(crate) const ONEWIRE_SEARCH_CMD: u8 = 0xf0;

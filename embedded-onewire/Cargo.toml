@@ -1,6 +1,6 @@
 [package]
 name = "embedded-onewire"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2024"
 license = "Apache-2.0"
 description = "A no-std trait definition for interacting with 1-Wire devices."
