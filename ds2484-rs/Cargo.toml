@@ -7,8 +7,7 @@ description = "A no-std driver implementation of the OneWire traits from embedde
 authors = ["Sunip K. Mukherjee <sunipkmukherjee@gmail.com>"]
 
 [dependencies]
-# embedded-onewire = { version = "0.0.4", default-features = false }
-embedded-onewire = { path = "../embedded-onewire", default-features = false }
+embedded-onewire = { version = "0.0.5", default-features = false }
 bitfield-struct = "0.11"
 embedded-hal = { version = "1.0", default-features = false }
 embedded-hal-async = { version = "1.0", default-features = false }

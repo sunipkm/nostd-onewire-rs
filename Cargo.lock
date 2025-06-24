@@ -39,7 +39,7 @@ dependencies = [
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "embedded-hal-mock",
- "embedded-onewire",
+ "embedded-onewire 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -97,6 +97,12 @@ version = "0.0.5"
 dependencies = [
  "rand",
 ]
+
+[[package]]
+name = "embedded-onewire"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a832c7c82356b59e3e4b77ddc4d634248746963525d31532b86934bad350550"
 
 [[package]]
 name = "embedded-time"
